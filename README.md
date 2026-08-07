@@ -136,3 +136,50 @@ Before moving to an HTTP service, be able to explain:
 - No Ray Serve, containers, Kubernetes, or MLflow yet
 
 These limitations are intentional boundaries for Phase 1.
+
+## Phase 2: local HTTP API
+
+Start the API on `127.0.0.1:8000`:
+
+```bash
+LLM_DEVICE=auto LLM_DTYPE=auto uv run llm-api
+```
+
+The server starts accepting operational requests while the model loads in a
+background thread. In a second Terminal, inspect it with:
+
+```bash
+curl http://127.0.0.1:8000/health
+curl -i http://127.0.0.1:8000/ready
+curl http://127.0.0.1:8000/v1/metadata
+```
+
+Generate a response:
+
+```bash
+curl -X POST http://127.0.0.1:8000/v1/generate \
+  -H 'Content-Type: application/json' \
+  -H 'X-Request-ID: learning-request-1' \
+  -d '{
+    "prompt": "Explain why an API needs input validation.",
+    "max_new_tokens": 64,
+    "do_sample": false
+  }'
+```
+
+Interactive OpenAPI documentation is available at
+<http://127.0.0.1:8000/docs> while the server is running.
+
+### Endpoint responsibilities
+
+- `GET /health`: confirms that the API process can respond. It remains healthy
+  while the model is loading.
+- `GET /ready`: returns HTTP 200 only when the model can accept inference. It
+  returns HTTP 503 while loading or after a loading failure.
+- `GET /v1/metadata`: reports the loaded model, device, dtype, and load time.
+- `POST /v1/generate`: validates bounded generation settings and returns text,
+  token counts, timings, model identity, and a request ID.
+
+Phase 2 intentionally serializes generation through one model instance. This
+protects the local runtime but does not provide scalable concurrency. Later Ray
+Serve replicas, routing, backpressure, and autoscaling will address that boundary.
