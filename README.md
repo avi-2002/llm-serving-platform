@@ -370,3 +370,18 @@ loading, and completed a real inference request. See
 
 The user-run Compose checkpoint independently confirmed healthy startup, inference
 through the published port, and clean shutdown with the model volume retained.
+
+## Phase 10: Kubernetes
+
+The `kubernetes/` Kustomize base declares a namespace, configuration, persistent
+model cache, hardened Ray Serve Deployment, and ClusterIP Service:
+
+```bash
+kubectl apply -k kubernetes
+kubectl get pods -n llm-serving -w
+kubectl port-forward -n llm-serving service/llm-serving 8080:80
+```
+
+The Pod has separate startup, readiness, and liveness probes plus explicit CPU
+and memory requests/limits. See `docs/phase-10-fundamentals.md` for local-cluster
+setup, inspection commands, architecture, and cleanup cautions.

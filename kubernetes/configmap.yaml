@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: llm-serving-config
+data:
+  LLM_MODEL_ID: Qwen/Qwen2.5-0.5B-Instruct
+  LLM_DEVICE: cpu
+  LLM_DTYPE: float32
+  HF_HOME: /data/huggingface
+  HF_HUB_DISABLE_TELEMETRY: "1"
+  RAY_TOTAL_CPUS: "4"
+  RAY_NUM_REPLICAS: "1"
+  RAY_CPUS_PER_REPLICA: "4"
+  TORCH_THREADS_PER_REPLICA: "4"
+  RAY_MAX_BATCH_SIZE: "4"
+  RAY_BATCH_WAIT_TIMEOUT_SECONDS: "0.02"
+  RAY_ENABLE_UV_RUN_RUNTIME_ENV: "0"
+  RAY_USAGE_STATS_ENABLED: "0"
