@@ -1,0 +1,17 @@
+{
+  "label": "single cached CPU run; not a statistical benchmark",
+  "machine": "Apple M1 MacBook Air, 16 GB unified memory",
+  "model_id": "Qwen/Qwen2.5-0.5B-Instruct",
+  "device": "cpu",
+  "dtype": "float32",
+  "prompt": "Explain the difference between latency and throughput in two sentences.",
+  "input_tokens": 33,
+  "output_tokens": 32,
+  "model_load_seconds": 3.560458166997705,
+  "generation_seconds": 3.0179318750015227,
+  "tokens_per_second": 10.603287723313453,
+  "process_rss_mb": 2119.9375,
+  "max_new_tokens": 32,
+  "do_sample": false,
+  "seed": 42
+}

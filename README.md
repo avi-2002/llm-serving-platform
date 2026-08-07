@@ -1,0 +1,130 @@
+# Low-Latency LLM Model Serving Platform
+
+A learning-first implementation of local LLM inference that will evolve into a
+Ray Serve and Kubernetes serving platform. Phase 1 deliberately uses plain
+PyTorch and Hugging Face Transformers so the inference fundamentals remain
+visible before serving infrastructure is introduced.
+
+## Phase 1 architecture
+
+```text
+prompt
+  -> model-specific chat template
+  -> tokenizer (text to token IDs)
+  -> causal language model on CPU or Apple MPS
+  -> autoregressive token generation
+  -> decoder (token IDs to text)
+  -> timing and memory measurements
+```
+
+## Model
+
+The baseline is `Qwen/Qwen2.5-0.5B-Instruct`, a compact instruction-tuned causal
+language model with approximately 0.49 billion parameters. Its small size makes
+CPU/MPS comparisons practical on a 16 GB Apple M1 while exercising the same
+tokenization and generation abstractions used by larger models.
+
+Model outputs may be inaccurate. This phase measures mechanics and performance;
+it does not claim factual reliability.
+
+## Setup
+
+Requirements: macOS on Apple Silicon, Python 3.11, and `uv`.
+
+```bash
+uv sync
+```
+
+`uv sync` creates `.venv` and installs the exact versions in `uv.lock`. Do not
+install project dependencies into the global Python environment.
+
+## Run local inference
+
+Automatically select MPS when available:
+
+```bash
+uv run local-llm --prompt "Explain KV caching in three short sentences."
+```
+
+Force a CPU baseline:
+
+```bash
+uv run local-llm \
+  --device cpu \
+  --dtype float32 \
+  --max-new-tokens 64 \
+  --prompt "Explain KV caching in three short sentences."
+```
+
+Generate machine-readable measurements:
+
+```bash
+uv run local-llm --json --prompt "What is autoregressive decoding?"
+```
+
+Sampling is opt-in. Without `--sample`, greedy decoding makes repeatable
+baseline comparisons easier.
+
+```bash
+uv run local-llm \
+  --sample \
+  --temperature 0.7 \
+  --top-p 0.9 \
+  --seed 42 \
+  --prompt "Give an analogy for tokenization."
+```
+
+The first execution downloads model files from Hugging Face, so its model-load
+measurement includes network transfer and must be labelled a **cold download**.
+Later executions reuse the local cache and provide the meaningful process-startup
+baseline.
+
+## What the measurements mean
+
+- **Input tokens:** tokenized system instruction, user prompt, and chat-control
+  tokens consumed before generation begins.
+- **Output tokens:** newly generated tokens only.
+- **Model load:** tokenizer/model loading, weight materialization, device transfer,
+  and accelerator synchronization.
+- **Generation:** complete `generate()` time, including prefill and decoding.
+- **Tokens/s:** output tokens divided by generation time.
+- **Process RSS:** resident memory attributed to the Python process. On unified
+  memory systems this is an approximation, not an exact GPU-memory measurement.
+
+This implementation does **not** yet report time to first token. `generate()`
+returns after the full sequence is complete. We will add streaming instrumentation
+later and then separate prefill latency, TTFT, and inter-token latency.
+
+## Verify quality checks
+
+```bash
+uv run ruff check .
+uv run pytest
+```
+
+The unit tests do not download model weights. They test device/dtype selection
+and generation-parameter validation.
+
+## Learning checkpoints
+
+Before moving to an HTTP service, be able to explain:
+
+1. Why chat messages must be converted to the model's exact chat template.
+2. The difference between a tokenizer, token IDs, logits, and decoded text.
+3. Why a causal model emits one token at a time even when `generate()` returns a
+   complete string.
+4. The difference between model loading, prefill, and decoding.
+5. Why accelerator work must be synchronized before measuring wall-clock time.
+6. Why FP16 uses less weight memory than FP32 and can change numerical behavior.
+7. Why deterministic greedy decoding is useful for performance baselines.
+
+## Current limitations
+
+- Single process and single model instance
+- One request at a time
+- No HTTP API, streaming, dynamic batching, or autoscaling
+- No latency percentiles or load generator
+- No quality/factuality evaluation
+- No Ray Serve, containers, Kubernetes, or MLflow yet
+
+These limitations are intentional boundaries for Phase 1.
