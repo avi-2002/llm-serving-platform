@@ -36,6 +36,12 @@ class FakeLLM:
             batch_size=1,
         )
 
+    def stream_generate(
+        self, prompt: str, settings: GenerationSettings
+    ) -> Iterator[str]:
+        yield "A deterministic "
+        yield "test response."
+
 
 def make_ready_client() -> Iterator[TestClient]:
     runtime = ModelRuntime()

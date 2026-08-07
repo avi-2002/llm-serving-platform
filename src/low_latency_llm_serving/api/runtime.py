@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import AsyncIterator, Iterator
 from dataclasses import dataclass
 from typing import Literal, Protocol
 
@@ -25,6 +26,10 @@ class InferenceModel(Protocol):
     def generate(
         self, prompt: str, settings: GenerationSettings
     ) -> InferenceResult: ...
+
+    def stream_generate(
+        self, prompt: str, settings: GenerationSettings
+    ) -> Iterator[str]: ...
 
 
 @dataclass(frozen=True)
@@ -76,3 +81,22 @@ class ModelRuntime:
 
         async with self.generation_lock:
             return await asyncio.to_thread(self.model.generate, prompt, settings)
+
+    async def stream_generate(
+        self, prompt: str, settings: GenerationSettings
+    ) -> AsyncIterator[str]:
+        if self.status != "ready" or self.model is None:
+            raise RuntimeError("model is not ready")
+
+        sentinel = object()
+
+        def next_chunk(iterator: Iterator[str]) -> str | object:
+            return next(iterator, sentinel)
+
+        async with self.generation_lock:
+            iterator = self.model.stream_generate(prompt, settings)
+            while True:
+                chunk = await asyncio.to_thread(next_chunk, iterator)
+                if chunk is sentinel:
+                    break
+                yield str(chunk)

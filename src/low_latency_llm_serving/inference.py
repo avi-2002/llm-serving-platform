@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import asdict, dataclass
+from threading import Thread
 from time import perf_counter
 
 import psutil
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStreamer
 
 from low_latency_llm_serving.devices import resolve_device, resolve_dtype, synchronize
 
@@ -147,6 +149,71 @@ class LocalLLM:
             process_rss_mb=rss_mb,
             settings=settings,
         )
+
+    def stream_generate(
+        self,
+        prompt: str,
+        settings: GenerationSettings | None = None,
+    ) -> Iterator[str]:
+        """Yield decoded text as generation progresses."""
+        settings = settings or GenerationSettings()
+        settings.validate()
+        if not prompt.strip():
+            raise ValueError("prompt must contain non-whitespace text")
+
+        torch.manual_seed(settings.seed)
+        messages = [
+            {"role": "system", "content": "You are a concise, helpful assistant."},
+            {"role": "user", "content": prompt},
+        ]
+        model_inputs = self.tokenizer.apply_chat_template(
+            messages,
+            add_generation_prompt=True,
+            return_dict=True,
+            return_tensors="pt",
+        ).to(self.device)
+        streamer = TextIteratorStreamer(
+            self.tokenizer,
+            skip_prompt=True,
+            skip_special_tokens=True,
+            timeout=30.0,
+        )
+        generation_kwargs: dict[str, object] = {
+            **model_inputs,
+            "streamer": streamer,
+            "max_new_tokens": settings.max_new_tokens,
+            "do_sample": settings.do_sample,
+            "pad_token_id": self.tokenizer.eos_token_id,
+        }
+        if settings.do_sample:
+            generation_kwargs.update(
+                temperature=settings.temperature,
+                top_p=settings.top_p,
+            )
+        else:
+            generation_kwargs.update(temperature=None, top_p=None, top_k=None)
+
+        generation_error: list[Exception] = []
+
+        def run_generation() -> None:
+            try:
+                with torch.inference_mode():
+                    self.model.generate(**generation_kwargs)
+                synchronize(self.device)
+            # Generation crosses model, device, and streamer boundaries. Any
+            # failure must unblock the consumer and then be propagated.
+            except Exception as exc:  # noqa: BLE001
+                generation_error.append(exc)
+                streamer.on_finalized_text("", stream_end=True)
+
+        worker = Thread(target=run_generation, daemon=True)
+        worker.start()
+        for text in streamer:
+            if text:
+                yield text
+        worker.join()
+        if generation_error:
+            raise RuntimeError("streaming generation failed") from generation_error[0]
 
     def generate_batch(
         self,

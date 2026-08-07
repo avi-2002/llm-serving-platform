@@ -1,6 +1,26 @@
 from tests.api.conftest import make_ready_client
 
 
+def test_stream_generate_returns_sse_chunks_and_measurements() -> None:
+    for client in make_ready_client():
+        with client.stream(
+            "POST",
+            "/v1/generate/stream",
+            headers={"x-request-id": "stream-123"},
+            json={"prompt": "Explain streaming.", "max_new_tokens": 32},
+        ) as response:
+            body = "".join(response.iter_text())
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/event-stream")
+    assert "event: start" in body
+    assert '"request_id": "stream-123"' in body
+    assert body.count("event: token") == 2
+    assert "event: done" in body
+    assert '"response": "A deterministic test response."' in body
+    assert '"time_to_first_chunk_seconds":' in body
+
+
 def test_generate_returns_model_output_and_measurements() -> None:
     for client in make_ready_client():
         response = client.post(
@@ -45,4 +65,3 @@ def test_generate_rejects_excessive_output_limit() -> None:
         )
 
     assert response.status_code == 422
-

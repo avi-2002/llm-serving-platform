@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 from contextlib import asynccontextmanager, suppress
 from dataclasses import asdict
@@ -11,6 +12,7 @@ from uuid import uuid4
 
 import torch
 from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.responses import StreamingResponse
 
 from low_latency_llm_serving.api.runtime import ModelRuntime, RuntimeConfig
 from low_latency_llm_serving.api.schemas import (
@@ -60,8 +62,8 @@ def create_app(
 
     application = FastAPI(
         title="Low-Latency LLM Serving API",
-        version="0.2.0",
-        description="Phase 2: validated HTTP access to one local LLM instance.",
+        version="0.6.0",
+        description="Validated local LLM inference with optional SSE streaming.",
         lifespan=lifespan,
     )
     application.state.runtime = model_runtime
@@ -148,6 +150,59 @@ def create_app(
             tokens_per_second=result.tokens_per_second,
             batch_size=result.batch_size,
             parameters=GenerationParameters(**asdict(result.settings)),
+        )
+
+    @application.post("/v1/generate/stream", tags=["inference"])
+    async def stream_generate(
+        payload: GenerateRequest, request: Request
+    ) -> StreamingResponse:
+        if model_runtime.status != "ready":
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="model is not ready",
+            )
+        request_id = request.headers.get("x-request-id", str(uuid4()))
+        settings = GenerationSettings(
+            max_new_tokens=payload.max_new_tokens,
+            do_sample=payload.do_sample,
+            temperature=payload.temperature,
+            top_p=payload.top_p,
+            seed=payload.seed,
+        )
+
+        def event(name: str, data: dict[str, object]) -> str:
+            return f"event: {name}\ndata: {json.dumps(data)}\n\n"
+
+        async def events():
+            started = perf_counter()
+            first_chunk_seconds: float | None = None
+            output = ""
+            yield event("start", {"request_id": request_id})
+            try:
+                async for chunk in model_runtime.stream_generate(
+                    payload.prompt, settings
+                ):
+                    if first_chunk_seconds is None:
+                        first_chunk_seconds = perf_counter() - started
+                    output += chunk
+                    yield event("token", {"text": chunk})
+                total_seconds = perf_counter() - started
+                yield event(
+                    "done",
+                    {
+                        "request_id": request_id,
+                        "response": output.strip(),
+                        "time_to_first_chunk_seconds": first_chunk_seconds,
+                        "total_request_seconds": total_seconds,
+                    },
+                )
+            except RuntimeError as exc:
+                yield event("error", {"request_id": request_id, "detail": str(exc)})
+
+        return StreamingResponse(
+            events(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
 
     return application

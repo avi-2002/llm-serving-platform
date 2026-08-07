@@ -276,3 +276,19 @@ requests/s (2.57x), while p95 latency fell from 9.03 to 2.10 seconds. At
 concurrency 1 no batch formed, so batching offered no demonstrated low-load
 advantage and retained a possible 20 ms collection cost. See
 `benchmarks/phase5_analysis.md` for the controlled comparison.
+
+## Phase 6: streaming responses
+
+Start the standard `llm-api`, then request a streamed answer:
+
+```bash
+curl -N -X POST http://127.0.0.1:8000/v1/generate/stream \
+  -H 'Content-Type: application/json' \
+  -H 'X-Request-ID: phase6-learning-1' \
+  -d '{"prompt":"Explain KV caching simply.","max_new_tokens":64}'
+```
+
+The SSE response emits `start`, `token`, and `done` events. The final event reports
+time to first displayed text chunk and total request time. This route improves
+perceived responsiveness; it does not make the underlying model generate tokens
+faster. See `docs/phase-6-fundamentals.md` for the concepts and experiment.
