@@ -1,0 +1,11 @@
+{
+  "experiment": "Phase 6 SSE streaming smoke test",
+  "request_id": "phase6-learning-1",
+  "prompt": "Explain KV caching in simple language.",
+  "max_new_tokens": 64,
+  "time_to_first_chunk_seconds": 0.3076751670014346,
+  "total_request_seconds": 4.380690958998457,
+  "time_before_completion_saved_seconds": 4.073015791997022,
+  "first_chunk_fraction_of_total": 0.0702355431,
+  "interpretation": "Useful text began after about 7% of the total request time. Streaming improved perceived responsiveness, not total generation speed."
+}

@@ -70,6 +70,16 @@ curl -N -X POST http://127.0.0.1:8000/v1/generate/stream \
 Compare it with `POST /v1/generate`. The completed answer may take approximately
 the same total time, but the streaming call should display useful text earlier.
 
+## Observed result
+
+On the local M1 experiment, the first displayed text arrived in 0.308 seconds and
+the response completed in 4.381 seconds. The user therefore began reading 4.073
+seconds before the answer was complete. The first chunk arrived after only 7% of
+the total request duration.
+
+This demonstrates improved perceived responsiveness, not faster model compute.
+See `benchmarks/phase6_analysis.md` for the interpretation and measurement limits.
+
 ## Topics to study
 
 - HTTP chunked transfer and Server-Sent Events.

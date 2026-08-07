@@ -292,3 +292,8 @@ The SSE response emits `start`, `token`, and `done` events. The final event repo
 time to first displayed text chunk and total request time. This route improves
 perceived responsiveness; it does not make the underlying model generate tokens
 faster. See `docs/phase-6-fundamentals.md` for the concepts and experiment.
+
+In the measured M1 smoke test, the first displayed text arrived after 0.308
+seconds while the complete response took 4.381 seconds. Streaming therefore let
+the user begin reading about 4.07 seconds before generation finished. See
+`benchmarks/phase6_analysis.md` for the result and limitations.
