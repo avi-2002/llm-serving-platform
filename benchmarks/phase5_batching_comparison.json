@@ -1,0 +1,38 @@
+{
+  "experiment": "Phase 5 dynamic batching",
+  "controls": {
+    "model": "Qwen/Qwen2.5-0.5B-Instruct",
+    "replicas": 1,
+    "torch_threads_per_replica": 4,
+    "requests_per_concurrency": 12,
+    "max_new_tokens": 16,
+    "decoding": "greedy"
+  },
+  "candidates": {
+    "unbatched": {
+      "max_batch_size": 1,
+      "batch_wait_timeout_seconds": 0.0
+    },
+    "batched": {
+      "max_batch_size": 4,
+      "batch_wait_timeout_seconds": 0.02
+    }
+  },
+  "results": [
+    {
+      "concurrency": 1,
+      "unbatched": {"requests_per_second": 0.8741, "tokens_per_second": 13.985, "p50_seconds": 1.1003, "p95_seconds": 1.3430, "p99_seconds": 1.5085, "mean_batch_size": 1.0, "max_batch_size": 1},
+      "batched": {"requests_per_second": 0.9033, "tokens_per_second": 14.452, "p50_seconds": 1.1058, "p95_seconds": 1.1136, "p99_seconds": 1.1164, "mean_batch_size": 1.0, "max_batch_size": 1}
+    },
+    {
+      "concurrency": 2,
+      "unbatched": {"requests_per_second": 0.8284, "tokens_per_second": 13.255, "p50_seconds": 2.3986, "p95_seconds": 2.6018, "p99_seconds": 2.6354, "mean_batch_size": 1.0, "max_batch_size": 1},
+      "batched": {"requests_per_second": 1.0050, "tokens_per_second": 16.080, "p50_seconds": 1.9919, "p95_seconds": 2.0017, "p99_seconds": 2.0018, "mean_batch_size": 2.0, "max_batch_size": 2}
+    },
+    {
+      "concurrency": 4,
+      "unbatched": {"requests_per_second": 0.7504, "tokens_per_second": 12.006, "p50_seconds": 4.1108, "p95_seconds": 9.0331, "p99_seconds": 11.5652, "mean_batch_size": 1.0, "max_batch_size": 1},
+      "batched": {"requests_per_second": 1.9267, "tokens_per_second": 30.827, "p50_seconds": 2.0677, "p95_seconds": 2.0986, "p99_seconds": 2.0989, "mean_batch_size": 4.0, "max_batch_size": 4}
+    }
+  ]
+}

@@ -269,3 +269,10 @@ Use the full offline/cache environment shown in the Phase 4 commands. Benchmark
 responses record actual batch size; summaries report mean and maximum observed
 batch sizes. Requests with different decoding settings safely fall back to
 individual generation rather than being combined incorrectly.
+
+In the measured M1 experiment, actual batches reached 4 at concurrency 4.
+Compared with the unbatched control, throughput increased from 0.75 to 1.93
+requests/s (2.57x), while p95 latency fell from 9.03 to 2.10 seconds. At
+concurrency 1 no batch formed, so batching offered no demonstrated low-load
+advantage and retained a possible 20 ms collection cost. See
+`benchmarks/phase5_analysis.md` for the controlled comparison.

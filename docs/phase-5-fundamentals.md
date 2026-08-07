@@ -96,6 +96,18 @@ The unbatched run must be repeated using the new batching-capable code rather th
 reusing Phase 4 numbers, because code-path changes can otherwise confound the
 comparison.
 
+## Observed result on the M1
+
+The telemetry confirmed actual batches of 1, 2, and 4 as concurrency increased.
+At concurrency 4, batching raised throughput from 0.75 to 1.93 requests/s (2.57x)
+and reduced p95 latency from 9.03 to 2.10 seconds. One four-request model call
+took about 2.06 seconds versus about 1.16 seconds for a one-request call, so the
+larger operation cost more but completed four times the useful work.
+
+At concurrency 1 no batch formed. Small differences there are measurement noise,
+and the configured 20 ms collection window remains a possible low-traffic cost.
+See `benchmarks/phase5_analysis.md` for the complete results and limitations.
+
 ## Topics to study
 
 - Tensor batch dimensions and vectorization.
