@@ -347,3 +347,23 @@ A second MLflow run with the expanded regression rules correctly flagged two of
 five answers (40%) while concept coverage remained 46.7%. This comparison
 demonstrates that evaluator changes must be versioned and interpreted separately
 from model changes.
+
+## Phase 9: Docker container
+
+Build and start the standard API in a reproducible Linux container:
+
+```bash
+docker compose build api
+docker compose up api
+```
+
+The image installs locked production dependencies in a multi-stage build, runs as
+a non-root user, checks model readiness, and stores downloaded model files in a
+named volume. An optional Ray service is available with
+`docker compose --profile ray up ray-api`. See
+`docs/phase-9-fundamentals.md` for the experiment and container concepts.
+
+The verified Linux ARM64 image built without warnings, ran as a non-root user,
+persisted its 954 MB model cache in a named volume, became healthy after model
+loading, and completed a real inference request. See
+`benchmarks/phase9_analysis.md` for the smoke-test evidence.

@@ -1,0 +1,43 @@
+name: llm-serving-platform
+
+x-common: &common
+  image: llm-serving-platform:phase9
+  build:
+    context: .
+    dockerfile: Dockerfile
+  init: true
+  environment: &common-environment
+    LLM_MODEL_ID: Qwen/Qwen2.5-0.5B-Instruct
+    LLM_DEVICE: cpu
+    LLM_DTYPE: float32
+    HF_HOME: /data/huggingface
+    HF_HUB_DISABLE_TELEMETRY: "1"
+  volumes:
+    - huggingface-cache:/data/huggingface
+
+services:
+  api:
+    <<: *common
+    ports:
+      - "8000:8000"
+
+  ray-api:
+    <<: *common
+    profiles: ["ray"]
+    command: ["ray-llm-api"]
+    ports:
+      - "8001:8000"
+    environment:
+      <<: *common-environment
+      RAY_TOTAL_CPUS: "4"
+      RAY_NUM_REPLICAS: "1"
+      RAY_CPUS_PER_REPLICA: "4"
+      TORCH_THREADS_PER_REPLICA: "4"
+      RAY_MAX_BATCH_SIZE: "4"
+      RAY_BATCH_WAIT_TIMEOUT_SECONDS: "0.02"
+      RAY_ENABLE_UV_RUN_RUNTIME_ENV: "0"
+      RAY_USAGE_STATS_ENABLED: "0"
+    shm_size: "2gb"
+
+volumes:
+  huggingface-cache:
