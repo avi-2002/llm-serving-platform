@@ -1,0 +1,27 @@
+{
+  "mlflow_run_id": "02dc7fa7a34b48c2adae2f91df2910e2",
+  "model_id": "Qwen/Qwen2.5-0.5B-Instruct",
+  "device": "cpu",
+  "dtype": "float32",
+  "max_new_tokens": 64,
+  "seed": 42,
+  "summary": {
+    "successful_cases": 5,
+    "cases": 5,
+    "success_rate": 1.0,
+    "mean_concept_coverage": 0.4666666666666667,
+    "hallucination_signal_rate": 0.4,
+    "mean_latency_seconds": 3.6720921667976656,
+    "p95_latency_seconds": 4.14551105020364,
+    "total_output_tokens": 282
+  },
+  "flagged_cases": {
+    "streaming": [
+      "streaming can indeed speed up computation",
+      "processing multiple responses simultaneously"
+    ],
+    "prometheus-counter": [
+      "whether a counter can normally decrease, this depends"
+    ]
+  }
+}

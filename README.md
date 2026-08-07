@@ -342,3 +342,8 @@ The first Qwen 0.5B baseline completed 5/5 cases with 46.7% concept coverage and
 3.900-second mean latency. Manual review caught an incorrect streaming claim that
 the initial phrase-based hallucination rule missed, so the failure was added to
 the regression dataset. See `benchmarks/phase8_analysis.md`.
+
+A second MLflow run with the expanded regression rules correctly flagged two of
+five answers (40%) while concept coverage remained 46.7%. This comparison
+demonstrates that evaluator changes must be versioned and interpreted separately
+from model changes.

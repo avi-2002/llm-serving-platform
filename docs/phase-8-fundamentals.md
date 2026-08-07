@@ -74,6 +74,11 @@ model's alternative wording.
 We added the observed bad phrasings to the dataset for future regression runs.
 See `benchmarks/phase8_analysis.md` for the per-case review.
 
+The second MLflow run correctly flagged the streaming and Prometheus-counter
+answers, producing a 40% hallucination signal rate while concept coverage remained
+46.7%. This means the evaluator improved; it does not mean the deterministic model
+became worse between runs.
+
 ## Official reading
 
 - MLflow Tracking: <https://mlflow.org/docs/latest/ml/tracking/>

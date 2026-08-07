@@ -35,3 +35,24 @@ baseline, not a trusted technical expert.
 The next run should use the updated dataset and a distinct MLflow run name. That
 will show how experiment comparison works and should correctly flag the repeated
 false statements under deterministic decoding.
+
+## Regression run v2
+
+The second MLflow run, `02dc7fa7a34b48c2adae2f91df2910e2`, used the expanded
+rules. It retained 5/5 request success and 46.7% concept coverage, but now reported
+a 40% hallucination signal rate. It correctly flagged the streaming and
+Prometheus-counter cases found during manual review.
+
+| Metric | Baseline | Regression v2 |
+|---|---:|---:|
+| Successful cases | 5/5 | 5/5 |
+| Mean concept coverage | 46.7% | 46.7% |
+| Hallucination signal rate | 0.0% | 40.0% |
+| Mean latency | 3.900 s | 3.672 s |
+| p95 latency | 4.324 s | 4.146 s |
+| Output tokens | 282 | 282 |
+
+The higher warning rate means the evaluator became more sensitive; the model did
+not become worse. The identical token count and concept coverage are consistent
+with deterministic greedy responses. The small latency difference is normal
+run-to-run variation and is not evidence of an optimization.
