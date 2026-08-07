@@ -1,0 +1,32 @@
+[
+  {
+    "id": "latency-vs-throughput",
+    "prompt": "In two short sentences, explain the difference between latency and throughput in an LLM service.",
+    "expected_concepts": [["latency", "delay", "time"], ["throughput", "rate", "amount"], ["request", "token", "work"]],
+    "forbidden_claims": ["latency and throughput are the same"]
+  },
+  {
+    "id": "dynamic-batching",
+    "prompt": "Explain dynamic batching in an LLM server using simple language.",
+    "expected_concepts": [["batch", "group", "combine"], ["request", "prompt"], ["together", "single operation", "same time"]],
+    "forbidden_claims": ["batching always reduces latency"]
+  },
+  {
+    "id": "streaming",
+    "prompt": "Does response streaming make the model compute the complete answer faster? Explain briefly.",
+    "expected_concepts": [["no", "not"], ["display", "show", "user", "perceived"], ["generate", "compute", "total"]],
+    "forbidden_claims": ["streaming always makes generation faster"]
+  },
+  {
+    "id": "health-vs-readiness",
+    "prompt": "What is the difference between a health check and a readiness check for a model API?",
+    "expected_concepts": [["health", "alive", "process"], ["ready", "readiness", "traffic", "request"], ["model", "load", "available"]],
+    "forbidden_claims": ["health and readiness are identical"]
+  },
+  {
+    "id": "prometheus-counter",
+    "prompt": "What should a Prometheus counter measure, and can it normally decrease?",
+    "expected_concepts": [["counter"], ["increase", "increment", "total"], ["not decrease", "cannot decrease", "only goes up", "reset"]],
+    "forbidden_claims": ["a counter normally increases and decreases"]
+  }
+]

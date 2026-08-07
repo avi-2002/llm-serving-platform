@@ -9,6 +9,7 @@ authors = [
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.116,<1",
+    "mlflow>=3.5,<4",
     "prometheus-client>=0.26,<1",
     "psutil>=7,<8",
     "ray[serve]>=2.56,<3",
@@ -22,6 +23,7 @@ dependencies = [
 local-llm = "low_latency_llm_serving.cli:main"
 llm-api = "low_latency_llm_serving.api.server:main"
 llm-benchmark = "low_latency_llm_serving.benchmark:main"
+llm-evaluate = "low_latency_llm_serving.evaluation:main"
 ray-llm-api = "low_latency_llm_serving.ray_serve:main"
 
 [build-system]

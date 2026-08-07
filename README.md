@@ -316,3 +316,24 @@ The local verification recorded both normal and streaming requests successfully,
 with their in-progress gauges returning to zero. Streaming's first text arrived
 in 0.257 seconds versus 4.224 seconds for the complete request. See
 `benchmarks/phase7_analysis.md` for the recorded signals and interpretation.
+
+## Phase 8: Evaluation and MLflow
+
+Run a fixed, version-controlled quality and performance evaluation against a
+running API and save it as an MLflow experiment:
+
+```bash
+uv run llm-evaluate \
+  --run-name qwen-cpu-baseline \
+  --output work/phase8-eval.json
+```
+
+Inspect experiment parameters, metrics, and per-case artifacts locally:
+
+```bash
+uv run mlflow ui --backend-store-uri "sqlite:///$PWD/work/mlflow.db" --port 5000
+```
+
+Visit <http://127.0.0.1:5000>. The initial code-based concept coverage and
+forbidden-claim checks are deliberately transparent regression signals, not proof
+of factual correctness. See `docs/phase-8-fundamentals.md`.
