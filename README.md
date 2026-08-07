@@ -105,6 +105,14 @@ uv run pytest
 The unit tests do not download model weights. They test device/dtype selection
 and generation-parameter validation.
 
+## Initial Apple M1 baseline
+
+For a single 33-token prompt and 32-token greedy response, CPU FP32 produced
+10.60 tokens/s while MPS FP16 produced 5.30 tokens/s. The GPU was slower for this
+small batch-of-one workload; accelerator dispatch and sequential decode overhead
+outweighed its parallelism. See `benchmarks/phase1_comparison.md` for the measured
+values, limitations, and interpretation.
+
 ## Learning checkpoints
 
 Before moving to an HTTP service, be able to explain:
