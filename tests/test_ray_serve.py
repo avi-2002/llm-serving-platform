@@ -16,6 +16,17 @@ def test_ray_deployment_uses_deferred_fastapi_factory() -> None:
     assert {"/health", "/ready", "/v1/metadata", "/v1/generate"} <= paths
 
 
+def test_ray_generation_openapi_declares_json_body_not_query_parameters() -> None:
+    deployment_class = RayLLMDeployment.func_or_class
+    deployment = object.__new__(deployment_class)
+    application = deployment.__serve_build_asgi_app__()
+
+    operation = application.openapi()["paths"]["/v1/generate"]["post"]
+
+    assert "requestBody" in operation
+    assert not operation.get("parameters")
+
+
 def test_build_application_does_not_start_ray_cluster() -> None:
     application = build_application(
         RayServeConfig(num_replicas=2, cpus_per_replica=2, torch_threads_per_replica=2)

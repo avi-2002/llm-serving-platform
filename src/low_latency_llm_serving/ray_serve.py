@@ -90,34 +90,31 @@ class RayLLMDeployment:
             version="0.4.0",
             description="Phase 4: replica-based local LLM inference with Ray Serve.",
         )
-        application.add_api_route(
-            "/health",
-            self.health,
-            methods=["GET"],
-            response_model=HealthResponse,
-            tags=["operations"],
+
+        @application.get(
+            "/health", response_model=HealthResponse, tags=["operations"]
         )
-        application.add_api_route(
-            "/ready",
-            self.ready,
-            methods=["GET"],
-            response_model=ReadyResponse,
-            tags=["operations"],
+        async def health_endpoint() -> HealthResponse:
+            return await self.health()
+
+        @application.get("/ready", response_model=ReadyResponse, tags=["operations"])
+        async def ready_endpoint() -> ReadyResponse:
+            return await self.ready()
+
+        @application.get(
+            "/v1/metadata", response_model=MetadataResponse, tags=["inference"]
         )
-        application.add_api_route(
-            "/v1/metadata",
-            self.metadata,
-            methods=["GET"],
-            response_model=MetadataResponse,
-            tags=["inference"],
+        async def metadata_endpoint() -> MetadataResponse:
+            return await self.metadata()
+
+        @application.post(
+            "/v1/generate", response_model=GenerateResponse, tags=["inference"]
         )
-        application.add_api_route(
-            "/v1/generate",
-            self.generate,
-            methods=["POST"],
-            response_model=GenerateResponse,
-            tags=["inference"],
-        )
+        async def generate_endpoint(
+            payload: GenerateRequest, request: Request
+        ) -> GenerateResponse:
+            return await self.generate(payload, request)
+
         return application
 
     async def health(self) -> HealthResponse:
