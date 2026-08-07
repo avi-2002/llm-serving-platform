@@ -49,6 +49,7 @@ class InferenceResult:
     tokens_per_second: float
     process_rss_mb: float
     settings: GenerationSettings
+    batch_size: int = 1
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -146,3 +147,98 @@ class LocalLLM:
             process_rss_mb=rss_mb,
             settings=settings,
         )
+
+    def generate_batch(
+        self,
+        prompts: list[str],
+        settings: GenerationSettings | None = None,
+    ) -> list[InferenceResult]:
+        """Generate one response per prompt in a single tensor batch."""
+        settings = settings or GenerationSettings()
+        settings.validate()
+        if not prompts:
+            raise ValueError("prompts must contain at least one item")
+        if any(not prompt.strip() for prompt in prompts):
+            raise ValueError("every prompt must contain non-whitespace text")
+
+        torch.manual_seed(settings.seed)
+        conversations = [
+            [
+                {
+                    "role": "system",
+                    "content": "You are a concise, helpful assistant.",
+                },
+                {"role": "user", "content": prompt},
+            ]
+            for prompt in prompts
+        ]
+        original_padding_side = self.tokenizer.padding_side
+        self.tokenizer.padding_side = "left"
+        try:
+            model_inputs = self.tokenizer.apply_chat_template(
+                conversations,
+                add_generation_prompt=True,
+                return_dict=True,
+                return_tensors="pt",
+                padding=True,
+            ).to(self.device)
+        finally:
+            self.tokenizer.padding_side = original_padding_side
+
+        generation_kwargs: dict[str, object] = {
+            "max_new_tokens": settings.max_new_tokens,
+            "do_sample": settings.do_sample,
+            "pad_token_id": self.tokenizer.pad_token_id,
+        }
+        if settings.do_sample:
+            generation_kwargs.update(
+                temperature=settings.temperature,
+                top_p=settings.top_p,
+            )
+        else:
+            generation_kwargs.update(temperature=None, top_p=None, top_k=None)
+
+        synchronize(self.device)
+        generation_started = perf_counter()
+        with torch.inference_mode():
+            output_ids = self.model.generate(**model_inputs, **generation_kwargs)
+        synchronize(self.device)
+        generation_seconds = perf_counter() - generation_started
+
+        padded_input_length = model_inputs["input_ids"].shape[-1]
+        generated_batch = output_ids[:, padded_input_length:]
+        input_token_counts = model_inputs["attention_mask"].sum(dim=1).tolist()
+        rss_mb = psutil.Process().memory_info().rss / (1024 * 1024)
+        batch_size = len(prompts)
+        results: list[InferenceResult] = []
+
+        for prompt, generated_ids, input_tokens in zip(
+            prompts, generated_batch, input_token_counts, strict=True
+        ):
+            non_padding = generated_ids != self.tokenizer.pad_token_id
+            valid_ids = generated_ids[non_padding]
+            output_tokens = int(non_padding.sum().item())
+            response = self.tokenizer.decode(valid_ids, skip_special_tokens=True)
+            results.append(
+                InferenceResult(
+                    model_id=self.model_id,
+                    device=self.device.type,
+                    dtype=str(self.dtype).removeprefix("torch."),
+                    prompt=prompt,
+                    response=response.strip(),
+                    input_tokens=int(input_tokens),
+                    output_tokens=output_tokens,
+                    load_seconds=self.load_seconds,
+                    generation_seconds=generation_seconds,
+                    tokens_per_second=(
+                        output_tokens / generation_seconds
+                        if generation_seconds
+                        else 0.0
+                    ),
+                    process_rss_mb=rss_mb,
+                    settings=settings,
+                    batch_size=batch_size,
+                )
+            )
+
+        return results

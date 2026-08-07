@@ -38,6 +38,8 @@ class RayServeConfig:
     cpus_per_replica: float = 4
     torch_threads_per_replica: int = 4
     max_queued_requests: int = 100
+    max_batch_size: int = 1
+    batch_wait_timeout_seconds: float = 0.0
 
     def validate(self) -> None:
         if not self.model_id.strip():
@@ -54,6 +56,10 @@ class RayServeConfig:
             raise ValueError("torch_threads_per_replica must be positive")
         if self.max_queued_requests < 0:
             raise ValueError("max_queued_requests cannot be negative")
+        if not 1 <= self.max_batch_size <= 16:
+            raise ValueError("max_batch_size must be between 1 and 16")
+        if not 0 <= self.batch_wait_timeout_seconds <= 1:
+            raise ValueError("batch_wait_timeout_seconds must be between 0 and 1")
 
 
 def config_from_environment() -> RayServeConfig:
@@ -65,6 +71,10 @@ def config_from_environment() -> RayServeConfig:
         cpus_per_replica=float(os.getenv("RAY_CPUS_PER_REPLICA", "4")),
         torch_threads_per_replica=int(os.getenv("TORCH_THREADS_PER_REPLICA", "4")),
         max_queued_requests=int(os.getenv("RAY_MAX_QUEUED_REQUESTS", "100")),
+        max_batch_size=int(os.getenv("RAY_MAX_BATCH_SIZE", "1")),
+        batch_wait_timeout_seconds=float(
+            os.getenv("RAY_BATCH_WAIT_TIMEOUT_SECONDS", "0")
+        ),
     )
 
 
@@ -78,12 +88,16 @@ class ModelWorker:
         device: str,
         dtype: str,
         torch_threads: int,
+        max_batch_size: int,
+        batch_wait_timeout_seconds: float,
     ) -> None:
         if device == "cpu":
             torch.set_num_threads(torch_threads)
             torch.set_num_interop_threads(1)
         self.model = LocalLLM(model_id=model_id, device=device, dtype=dtype)
         self.replica_id = str(ray.get_runtime_context().get_actor_id())
+        self.generate_batch.set_max_batch_size(max_batch_size)
+        self.generate_batch.set_batch_wait_timeout_s(batch_wait_timeout_seconds)
 
     async def metadata(self) -> dict[str, object]:
         return {
@@ -93,7 +107,44 @@ class ModelWorker:
             "load_seconds": self.model.load_seconds,
         }
 
-    async def generate(self, payload: dict[str, object]) -> dict[str, object]:
+    @serve.batch(max_batch_size=4, batch_wait_timeout_s=0.02)
+    async def generate_batch(
+        self, payloads: list[dict[str, object]]
+    ) -> list[dict[str, object]]:
+        signatures = {
+            (
+                int(payload["max_new_tokens"]),
+                bool(payload["do_sample"]),
+                float(payload["temperature"]),
+                float(payload["top_p"]),
+                int(payload["seed"]),
+            )
+            for payload in payloads
+        }
+        if len(signatures) != 1:
+            results = []
+            for payload in payloads:
+                results.append(await self._generate_single(payload))
+            return results
+
+        first = payloads[0]
+        settings = GenerationSettings(
+            max_new_tokens=int(first["max_new_tokens"]),
+            do_sample=bool(first["do_sample"]),
+            temperature=float(first["temperature"]),
+            top_p=float(first["top_p"]),
+            seed=int(first["seed"]),
+        )
+        inference_results = await asyncio.to_thread(
+            self.model.generate_batch,
+            [str(payload["prompt"]) for payload in payloads],
+            settings,
+        )
+        return [self._result_to_dict(result) for result in inference_results]
+
+    async def _generate_single(
+        self, payload: dict[str, object]
+    ) -> dict[str, object]:
         settings = GenerationSettings(
             max_new_tokens=int(payload["max_new_tokens"]),
             do_sample=bool(payload["do_sample"]),
@@ -104,6 +155,9 @@ class ModelWorker:
         result = await asyncio.to_thread(
             self.model.generate, str(payload["prompt"]), settings
         )
+        return self._result_to_dict(result)
+
+    def _result_to_dict(self, result) -> dict[str, object]:
         return {
             "replica_id": self.replica_id,
             "model_id": result.model_id,
@@ -115,7 +169,11 @@ class ModelWorker:
             "generation_seconds": result.generation_seconds,
             "tokens_per_second": result.tokens_per_second,
             "settings": asdict(result.settings),
+            "batch_size": result.batch_size,
         }
+
+    async def generate(self, payload: dict[str, object]) -> dict[str, object]:
+        return await self.generate_batch(payload)
 
 
 def build_ingress_app() -> FastAPI:
@@ -165,6 +223,7 @@ def build_ingress_app() -> FastAPI:
             generation_seconds=float(result["generation_seconds"]),
             total_request_seconds=perf_counter() - request_started,
             tokens_per_second=float(result["tokens_per_second"]),
+            batch_size=int(result["batch_size"]),
             parameters=GenerationParameters.model_validate(result["settings"]),
         )
 
@@ -186,7 +245,7 @@ def build_application(config: RayServeConfig | None = None) -> serve.Application
     config.validate()
     worker = ModelWorker.options(
         num_replicas=config.num_replicas,
-        max_ongoing_requests=1,
+        max_ongoing_requests=max(1, config.max_batch_size),
         max_queued_requests=config.max_queued_requests,
         ray_actor_options={"num_cpus": config.cpus_per_replica},
     ).bind(
@@ -194,6 +253,8 @@ def build_application(config: RayServeConfig | None = None) -> serve.Application
         config.device,
         config.dtype,
         config.torch_threads_per_replica,
+        config.max_batch_size,
+        config.batch_wait_timeout_seconds,
     )
     return HTTPIngress.bind(worker)
 

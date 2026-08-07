@@ -62,6 +62,7 @@ class RequestRecord:
     output_tokens: int | None
     error: str | None
     replica_id: str | None = None
+    batch_size: int | None = None
 
 
 @dataclass(frozen=True)
@@ -82,6 +83,8 @@ class LevelSummary:
     server_total_mean_seconds: float | None
     server_overhead_mean_seconds: float | None
     replicas_observed: int
+    mean_batch_size: float | None
+    max_batch_size: int | None
 
 
 PostFunction = Callable[[str, dict[str, object], str, float], tuple[int, dict[str, Any]]]
@@ -132,6 +135,7 @@ def summarize_level(
     output_tokens = sum(record.output_tokens or 0 for record in successful)
     failed_count = len(records) - len(successful)
     replica_ids = {record.replica_id for record in successful if record.replica_id}
+    batch_sizes = [record.batch_size for record in successful if record.batch_size]
 
     return LevelSummary(
         concurrency=concurrency,
@@ -150,6 +154,8 @@ def summarize_level(
         server_total_mean_seconds=_mean(server_totals),
         server_overhead_mean_seconds=_mean(overheads),
         replicas_observed=len(replica_ids),
+        mean_batch_size=_mean(batch_sizes),
+        max_batch_size=max(batch_sizes) if batch_sizes else None,
     )
 
 
@@ -253,6 +259,7 @@ def execute_request(
             output_tokens=int(body["output_tokens"]),
             error=None,
             replica_id=body.get("replica_id"),
+            batch_size=int(body.get("batch_size", 1)),
         )
     except HTTPError as exc:
         latency = perf_counter() - started
@@ -341,8 +348,11 @@ def _format_optional(value: float | None) -> str:
 
 
 def print_summary(result: dict[str, object]) -> None:
-    print("\nPhase 3 benchmark summary")
-    print("concurrency  success  req/s  tok/s  p50(s)  p95(s)  p99(s)  errors")
+    print("\nLLM API benchmark summary")
+    print(
+        "concurrency  success  req/s  tok/s  p50(s)  p95(s)  p99(s)  "
+        "replicas  batch(avg/max)  errors"
+    )
     for level in result["levels"]:  # type: ignore[index]
         summary = level["summary"]  # type: ignore[index]
         print(
@@ -354,6 +364,9 @@ def print_summary(result: dict[str, object]) -> None:
             f"{_format_optional(summary['client_latency_p50_seconds']):>6}  "
             f"{_format_optional(summary['client_latency_p95_seconds']):>6}  "
             f"{_format_optional(summary['client_latency_p99_seconds']):>6}  "
+            f"{summary['replicas_observed']:>8}  "
+            f"{_format_optional(summary['mean_batch_size']):>5}/"
+            f"{summary['max_batch_size'] or 0:<3}  "
             f"{summary['failed_requests']:>6}"
         )
 

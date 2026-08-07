@@ -46,6 +46,7 @@ class GenerateResponse(BaseModel):
     generation_seconds: float
     total_request_seconds: float
     tokens_per_second: float
+    batch_size: int = 1
     parameters: GenerationParameters
 
 

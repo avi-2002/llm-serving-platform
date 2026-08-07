@@ -146,6 +146,7 @@ def create_app(
             generation_seconds=result.generation_seconds,
             total_request_seconds=perf_counter() - request_started,
             tokens_per_second=result.tokens_per_second,
+            batch_size=result.batch_size,
             parameters=GenerationParameters(**asdict(result.settings)),
         )
 

@@ -242,3 +242,30 @@ from 0.76 to 0.96 requests/s and reduced p95 latency from 7.73 to 4.31 seconds
 versus one Ray replica. The gain was below 2x because both replicas shared the same
 physical CPU and each generation slowed under contention. See
 `benchmarks/phase4_analysis.md` for the complete interpretation and limitations.
+
+## Phase 5: dynamic request batching
+
+The Ray model worker can combine compatible requests into one padded tensor batch.
+Batch size and maximum wait are runtime configuration, so the same code supports
+an unbatched control and a batched candidate.
+
+Unbatched control:
+
+```bash
+RAY_NUM_REPLICAS=1 RAY_MAX_BATCH_SIZE=1 RAY_BATCH_WAIT_TIMEOUT_SECONDS=0 \
+RAY_CPUS_PER_REPLICA=4 TORCH_THREADS_PER_REPLICA=4 \
+uv run ray-llm-api
+```
+
+Batched candidate:
+
+```bash
+RAY_NUM_REPLICAS=1 RAY_MAX_BATCH_SIZE=4 RAY_BATCH_WAIT_TIMEOUT_SECONDS=0.02 \
+RAY_CPUS_PER_REPLICA=4 TORCH_THREADS_PER_REPLICA=4 \
+uv run ray-llm-api
+```
+
+Use the full offline/cache environment shown in the Phase 4 commands. Benchmark
+responses record actual batch size; summaries report mean and maximum observed
+batch sizes. Requests with different decoding settings safely fall back to
+individual generation rather than being combined incorrectly.

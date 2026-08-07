@@ -51,6 +51,7 @@ def test_summary_calculates_throughput_percentiles_and_errors() -> None:
     assert summary.client_latency_p50_seconds == 1.5
     assert summary.server_overhead_mean_seconds == pytest.approx(0.55)
     assert summary.replicas_observed == 0
+    assert summary.mean_batch_size is None
 
 
 def test_summary_counts_distinct_ray_replicas() -> None:
@@ -66,6 +67,18 @@ def test_summary_counts_distinct_ray_replicas() -> None:
     summary = summarize_level(records, concurrency=2, wall_seconds=1.0)
 
     assert summary.replicas_observed == 2
+
+
+def test_summary_reports_observed_batch_sizes() -> None:
+    records = [
+        RequestRecord("a", 2, True, 200, 1.0, 0.8, 0.9, 10, 8, None, "r", 2),
+        RequestRecord("b", 2, True, 200, 1.0, 0.8, 0.9, 10, 8, None, "r", 4),
+    ]
+
+    summary = summarize_level(records, concurrency=2, wall_seconds=1.0)
+
+    assert summary.mean_batch_size == 3.0
+    assert summary.max_batch_size == 4
 
 
 def test_execute_request_maps_successful_response() -> None:
@@ -88,6 +101,7 @@ def test_execute_request_maps_successful_response() -> None:
     assert record.success is True
     assert record.output_tokens == 16
     assert record.server_total_seconds == 0.6
+    assert record.batch_size == 1
 
 
 @pytest.mark.parametrize(

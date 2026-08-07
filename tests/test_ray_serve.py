@@ -41,6 +41,8 @@ def test_build_application_does_not_start_ray_cluster() -> None:
         RayServeConfig(cpus_per_replica=0),
         RayServeConfig(torch_threads_per_replica=0),
         RayServeConfig(max_queued_requests=-1),
+        RayServeConfig(max_batch_size=0),
+        RayServeConfig(batch_wait_timeout_seconds=-0.1),
     ],
 )
 def test_invalid_ray_configuration_is_rejected(config: RayServeConfig) -> None:

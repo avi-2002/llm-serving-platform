@@ -33,6 +33,7 @@ class FakeLLM:
             tokens_per_second=24.0,
             process_rss_mb=100.0,
             settings=settings,
+            batch_size=1,
         )
 
 
@@ -41,4 +42,3 @@ def make_ready_client() -> Iterator[TestClient]:
     runtime.install_model(FakeLLM())
     with TestClient(create_app(runtime, auto_load=False)) as client:
         yield client
-
