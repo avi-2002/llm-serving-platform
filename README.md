@@ -236,3 +236,9 @@ uv run ray-llm-api
 Each replica owns a separate model instance. `max_ongoing_requests=1` tells Ray
 to send at most one active generation to each replica. Generation responses expose
 `replica_id`, allowing benchmark results to confirm routing across replicas.
+
+On the measured M1 baseline at concurrency 4, two replicas improved throughput
+from 0.76 to 0.96 requests/s and reduced p95 latency from 7.73 to 4.31 seconds
+versus one Ray replica. The gain was below 2x because both replicas shared the same
+physical CPU and each generation slowed under contention. See
+`benchmarks/phase4_analysis.md` for the complete interpretation and limitations.

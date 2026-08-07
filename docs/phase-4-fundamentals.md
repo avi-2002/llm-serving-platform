@@ -118,6 +118,17 @@ replicas share one physical M1 CPU, two-replica throughput may improve, stay fla
 or even decline depending on memory bandwidth and compute contention. The result
 must be measured rather than assumed.
 
+## Observed experiment
+
+Ray routed requests evenly across both model actors. At concurrency 4, two replicas
+improved throughput by about 25% and reduced p95 by about 44% compared with one
+replica. Throughput did not double because simultaneous generation slowed each
+replica from roughly 1.1 to 2.0 seconds on the shared M1 CPU.
+
+This demonstrates both sides of horizontal scaling: routing and isolation can
+reduce queueing, but real capacity grows only when additional replicas receive
+enough underlying compute resources.
+
 ## Topics to study
 
 - Ray actors, tasks, object store, and logical resources.

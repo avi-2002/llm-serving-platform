@@ -1,0 +1,97 @@
+{
+  "label": "Phase 4 fixed Ray Serve replica comparison; eight samples per level",
+  "machine": "Apple M1 MacBook Air, 16 GB unified memory",
+  "model": {
+    "model_id": "Qwen/Qwen2.5-0.5B-Instruct",
+    "device": "cpu",
+    "dtype": "float32"
+  },
+  "controls": {
+    "prompt": "Explain the difference between latency and throughput in two sentences.",
+    "max_new_tokens": 16,
+    "do_sample": false,
+    "seed": 42,
+    "warmup_requests": 1,
+    "requests_per_level": 8,
+    "cpus_per_replica": 4,
+    "torch_threads_per_replica": 4,
+    "ray_total_cpus": 8,
+    "max_ongoing_requests_per_replica": 1
+  },
+  "one_replica": [
+    {
+      "concurrency": 1,
+      "requests_per_second": 0.9050891679000271,
+      "output_tokens_per_second": 14.481426686400434,
+      "client_latency_p50_seconds": 1.0899551039983635,
+      "client_latency_p95_seconds": 1.140610358448248,
+      "client_latency_p99_seconds": 1.1410476716882112,
+      "server_generation_mean_seconds": 1.0986603801247838,
+      "server_overhead_mean_seconds": 0.0025803177495618,
+      "replicas_observed": 1,
+      "failed_requests": 0
+    },
+    {
+      "concurrency": 2,
+      "requests_per_second": 0.8971450028409934,
+      "output_tokens_per_second": 14.354320045455895,
+      "client_latency_p50_seconds": 2.198511917002179,
+      "client_latency_p95_seconds": 2.2775975726999604,
+      "client_latency_p99_seconds": 2.2838160809395047,
+      "server_generation_mean_seconds": 1.107630380250157,
+      "server_overhead_mean_seconds": 0.9808146612513156,
+      "replicas_observed": 1,
+      "failed_requests": 0
+    },
+    {
+      "concurrency": 4,
+      "requests_per_second": 0.7644739769235248,
+      "output_tokens_per_second": 12.231583630776397,
+      "client_latency_p50_seconds": 3.876318895996519,
+      "client_latency_p95_seconds": 7.7252468524005975,
+      "client_latency_p99_seconds": 8.71164593768015,
+      "server_generation_mean_seconds": 1.1711158854986934,
+      "server_overhead_mean_seconds": 2.994254109376925,
+      "replicas_observed": 1,
+      "failed_requests": 0
+    }
+  ],
+  "two_replicas": [
+    {
+      "concurrency": 1,
+      "requests_per_second": 0.8626313258469538,
+      "output_tokens_per_second": 13.80210121355126,
+      "client_latency_p50_seconds": 1.0958182085014414,
+      "client_latency_p95_seconds": 1.4318430545004959,
+      "client_latency_p99_seconds": 1.5531297444987284,
+      "server_generation_mean_seconds": 1.151539557250544,
+      "server_overhead_mean_seconds": 0.004084728997440834,
+      "replicas_observed": 2,
+      "failed_requests": 0
+    },
+    {
+      "concurrency": 2,
+      "requests_per_second": 0.9924739664465846,
+      "output_tokens_per_second": 15.879583463145353,
+      "client_latency_p50_seconds": 2.016021395502321,
+      "client_latency_p95_seconds": 2.042824589150405,
+      "client_latency_p99_seconds": 2.042936250631028,
+      "server_generation_mean_seconds": 2.0071947237502172,
+      "server_overhead_mean_seconds": 0.0033258384983128053,
+      "replicas_observed": 2,
+      "failed_requests": 0
+    },
+    {
+      "concurrency": 4,
+      "requests_per_second": 0.9563933069444246,
+      "output_tokens_per_second": 15.302292911110793,
+      "client_latency_p50_seconds": 4.00321024999721,
+      "client_latency_p95_seconds": 4.311237279051056,
+      "client_latency_p99_seconds": 4.311635555813337,
+      "server_generation_mean_seconds": 2.004816359499273,
+      "server_overhead_mean_seconds": 1.5863690883752497,
+      "replicas_observed": 2,
+      "failed_requests": 0
+    }
+  ]
+}
