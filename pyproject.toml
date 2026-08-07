@@ -19,6 +19,7 @@ dependencies = [
 [project.scripts]
 local-llm = "low_latency_llm_serving.cli:main"
 llm-api = "low_latency_llm_serving.api.server:main"
+llm-benchmark = "low_latency_llm_serving.benchmark:main"
 
 [build-system]
 requires = ["uv_build>=0.12.3,<0.13.0"]

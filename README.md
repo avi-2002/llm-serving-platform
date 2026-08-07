@@ -183,3 +183,31 @@ Interactive OpenAPI documentation is available at
 Phase 2 intentionally serializes generation through one model instance. This
 protects the local runtime but does not provide scalable concurrency. Later Ray
 Serve replicas, routing, backpressure, and autoscaling will address that boundary.
+
+## Phase 3: repeated and concurrent benchmarks
+
+With `llm-api` running in another Terminal, execute:
+
+```bash
+uv run llm-benchmark \
+  --concurrency 1 2 4 \
+  --requests 5 \
+  --warmup 1 \
+  --max-new-tokens 32 \
+  --output work/phase3-results.json
+```
+
+The harness keeps the prompt and decoding configuration fixed, varies only the
+number of simultaneous HTTP workers, and records both raw requests and aggregate
+measurements:
+
+- successful and failed requests;
+- error rate;
+- client p50, p95, and p99 latency;
+- requests per second;
+- output tokens per second;
+- server generation and endpoint timings;
+- model metadata and benchmark configuration.
+
+Files under `work/` are intentionally ignored because repeated experiments are
+scratch data. Curated, interpreted results belong under `benchmarks/`.
