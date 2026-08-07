@@ -32,3 +32,17 @@ container performance penalty.
 
 It does not yet prove an AMD64 build, registry pull, Kubernetes operation, load
 behavior, or production security posture. Those require separate verification.
+
+## User Compose verification
+
+The subsequent learning run used `docker compose up api` on port 8000. Compose
+reported the service as healthy, and a real request produced 32 output tokens in
+8.54 seconds (3.75 tokens/s), with 8.56 seconds total API latency. Standard
+`docker compose down` then removed the container and network while retaining the
+named model volume.
+
+The generated explanation called containers "essentially virtual machines,"
+which is technically misleading: containers share an operating-system kernel,
+while Docker Desktop uses a Linux VM underneath on macOS. This content-quality
+issue does not invalidate the container test and reinforces why serving checks
+and model-quality evaluation must remain separate.

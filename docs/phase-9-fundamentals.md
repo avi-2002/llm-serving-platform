@@ -77,6 +77,11 @@ model cache remained for reuse.
 
 See `benchmarks/phase9_analysis.md` for the measurements and their limitations.
 
+The user-run Compose verification also reached healthy status, served a 32-token
+response at 3.75 tokens/s, and shut down cleanly without deleting the model
+volume. The answer itself contained an imperfect container analogy, illustrating
+that infrastructure success does not guarantee response quality.
+
 ## Optional Ray container
 
 The Ray service is behind a Compose profile so it does not start accidentally

@@ -367,3 +367,6 @@ The verified Linux ARM64 image built without warnings, ran as a non-root user,
 persisted its 954 MB model cache in a named volume, became healthy after model
 loading, and completed a real inference request. See
 `benchmarks/phase9_analysis.md` for the smoke-test evidence.
+
+The user-run Compose checkpoint independently confirmed healthy startup, inference
+through the published port, and clean shutdown with the model volume retained.

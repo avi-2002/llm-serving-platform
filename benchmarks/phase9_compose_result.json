@@ -1,0 +1,19 @@
+{
+  "request_id": "phase9-learning-1",
+  "compose_service": "api",
+  "image": "llm-serving-platform:phase9",
+  "container_status": "healthy",
+  "published_port": "8000:8000",
+  "model_id": "Qwen/Qwen2.5-0.5B-Instruct",
+  "device": "cpu",
+  "dtype": "float32",
+  "input_tokens": 29,
+  "output_tokens": 32,
+  "generation_seconds": 8.535967712999991,
+  "total_request_seconds": 8.558936754000001,
+  "tokens_per_second": 3.7488426709094833,
+  "batch_size": 1,
+  "compose_down_removed_container": true,
+  "compose_down_removed_network": true,
+  "named_model_volume_retained": true
+}
