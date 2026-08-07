@@ -10,6 +10,7 @@ requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.116,<1",
     "psutil>=7,<8",
+    "ray[serve]>=2.56,<3",
     "safetensors>=0.5,<1",
     "torch==2.10.0",
     "transformers>=4.57,<5",
@@ -20,6 +21,7 @@ dependencies = [
 local-llm = "low_latency_llm_serving.cli:main"
 llm-api = "low_latency_llm_serving.api.server:main"
 llm-benchmark = "low_latency_llm_serving.benchmark:main"
+ray-llm-api = "low_latency_llm_serving.ray_serve:main"
 
 [build-system]
 requires = ["uv_build>=0.12.3,<0.13.0"]
@@ -30,6 +32,9 @@ line-length = 88
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+filterwarnings = [
+    "ignore:Using extra keyword arguments on `Field` is deprecated:Warning:ray.serve._private.config",
+]
 
 [dependency-groups]
 dev = [

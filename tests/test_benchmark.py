@@ -50,6 +50,22 @@ def test_summary_calculates_throughput_percentiles_and_errors() -> None:
     assert summary.output_tokens_per_second == 8.0
     assert summary.client_latency_p50_seconds == 1.5
     assert summary.server_overhead_mean_seconds == pytest.approx(0.55)
+    assert summary.replicas_observed == 0
+
+
+def test_summary_counts_distinct_ray_replicas() -> None:
+    records = [
+        RequestRecord(
+            "a", 2, True, 200, 1.0, 0.8, 0.9, 10, 8, None, "replica-a"
+        ),
+        RequestRecord(
+            "b", 2, True, 200, 1.0, 0.8, 0.9, 10, 8, None, "replica-b"
+        ),
+    ]
+
+    summary = summarize_level(records, concurrency=2, wall_seconds=1.0)
+
+    assert summary.replicas_observed == 2
 
 
 def test_execute_request_maps_successful_response() -> None:
@@ -87,4 +103,3 @@ def test_execute_request_maps_successful_response() -> None:
 def test_invalid_benchmark_config_is_rejected(config: BenchmarkConfig) -> None:
     with pytest.raises(ValueError):
         config.validate()
-

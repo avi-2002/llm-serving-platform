@@ -36,6 +36,7 @@ class GenerationParameters(BaseModel):
 
 class GenerateResponse(BaseModel):
     request_id: str
+    replica_id: str | None = None
     model_id: str
     device: str
     dtype: str
@@ -63,4 +64,3 @@ class MetadataResponse(BaseModel):
     device: str
     dtype: str
     load_seconds: float
-

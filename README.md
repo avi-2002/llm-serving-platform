@@ -211,3 +211,28 @@ measurements:
 
 Files under `work/` are intentionally ignored because repeated experiments are
 scratch data. Curated, interpreted results belong under `benchmarks/`.
+
+## Phase 4: Ray Serve replicas
+
+Start a one-replica Ray Serve deployment using the cached model:
+
+```bash
+HF_HOME="$PWD/work/hf-cache" HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
+RAY_ENABLE_UV_RUN_RUNTIME_ENV=0 RAY_USAGE_STATS_ENABLED=0 \
+RAY_NUM_REPLICAS=1 RAY_CPUS_PER_REPLICA=4 TORCH_THREADS_PER_REPLICA=4 \
+uv run ray-llm-api
+```
+
+The Ray deployment preserves the Phase 2 routes, so `llm-benchmark` works without
+changes. To test two fixed CPU replicas on the 8-core M1:
+
+```bash
+HF_HOME="$PWD/work/hf-cache" HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
+RAY_ENABLE_UV_RUN_RUNTIME_ENV=0 RAY_USAGE_STATS_ENABLED=0 \
+RAY_NUM_REPLICAS=2 RAY_CPUS_PER_REPLICA=4 TORCH_THREADS_PER_REPLICA=4 \
+uv run ray-llm-api
+```
+
+Each replica owns a separate model instance. `max_ongoing_requests=1` tells Ray
+to send at most one active generation to each replica. Generation responses expose
+`replica_id`, allowing benchmark results to confirm routing across replicas.

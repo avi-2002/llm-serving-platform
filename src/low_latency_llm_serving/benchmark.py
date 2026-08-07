@@ -61,6 +61,7 @@ class RequestRecord:
     input_tokens: int | None
     output_tokens: int | None
     error: str | None
+    replica_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -80,6 +81,7 @@ class LevelSummary:
     server_generation_mean_seconds: float | None
     server_total_mean_seconds: float | None
     server_overhead_mean_seconds: float | None
+    replicas_observed: int
 
 
 PostFunction = Callable[[str, dict[str, object], str, float], tuple[int, dict[str, Any]]]
@@ -129,6 +131,7 @@ def summarize_level(
     ]
     output_tokens = sum(record.output_tokens or 0 for record in successful)
     failed_count = len(records) - len(successful)
+    replica_ids = {record.replica_id for record in successful if record.replica_id}
 
     return LevelSummary(
         concurrency=concurrency,
@@ -146,6 +149,7 @@ def summarize_level(
         server_generation_mean_seconds=_mean(generation_times),
         server_total_mean_seconds=_mean(server_totals),
         server_overhead_mean_seconds=_mean(overheads),
+        replicas_observed=len(replica_ids),
     )
 
 
@@ -248,6 +252,7 @@ def execute_request(
             input_tokens=int(body["input_tokens"]),
             output_tokens=int(body["output_tokens"]),
             error=None,
+            replica_id=body.get("replica_id"),
         )
     except HTTPError as exc:
         latency = perf_counter() - started
