@@ -1,0 +1,21 @@
+{
+  "experiment": "Phase 7 Prometheus observability verification",
+  "requests": {
+    "generate_success": 1,
+    "stream_success": 1,
+    "errors": 0,
+    "in_progress_after_completion": 0
+  },
+  "normal_request": {
+    "duration_seconds": 4.158393041994714,
+    "output_tokens": 64,
+    "batch_size": 1
+  },
+  "streaming_request": {
+    "duration_seconds": 4.223597499993048,
+    "time_to_first_chunk_seconds": 0.25725054099893896,
+    "output_characters": 342,
+    "first_chunk_fraction_of_total": 0.0609079078,
+    "text_appeared_before_completion_by_seconds": 3.966346958994109
+  }
+}

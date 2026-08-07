@@ -49,6 +49,17 @@ curl -s http://127.0.0.1:8000/metrics | grep '^llm_'
 Look for request counts, duration buckets, the first-chunk observation, and an
 in-progress value that has returned to zero.
 
+## Observed result
+
+The verification run recorded one successful normal request and one successful
+streaming request. Their total durations were 4.158 and 4.224 seconds. Streaming
+produced its first displayed text in 0.257 seconds, about 6.1% into the request,
+while both in-progress gauges correctly returned to zero.
+
+The normal request recorded 64 output tokens and a batch size of one. The streamed
+request recorded 342 delivered characters. See `benchmarks/phase7_analysis.md`
+for the interpretation and limits.
+
 ## Histograms in plain language
 
 A latency histogram keeps several baskets such as "under 0.5 seconds", "under 1

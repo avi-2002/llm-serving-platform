@@ -311,3 +311,8 @@ curl -s http://127.0.0.1:8000/metrics | grep '^llm_'
 The `/metrics` route uses Prometheus exposition format. See
 `docs/phase-7-fundamentals.md` for metric types, cardinality, PromQL topics, and
 the learning experiment.
+
+The local verification recorded both normal and streaming requests successfully,
+with their in-progress gauges returning to zero. Streaming's first text arrived
+in 0.257 seconds versus 4.224 seconds for the complete request. See
+`benchmarks/phase7_analysis.md` for the recorded signals and interpretation.
