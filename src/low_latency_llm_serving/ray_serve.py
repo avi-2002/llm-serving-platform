@@ -9,6 +9,7 @@ from uuid import uuid4
 import ray
 import torch
 from fastapi import FastAPI, Request
+from fastapi.responses import Response
 from ray import serve
 
 from low_latency_llm_serving.api.schemas import (
@@ -24,6 +25,7 @@ from low_latency_llm_serving.inference import (
     GenerationSettings,
     LocalLLM,
 )
+from low_latency_llm_serving.metrics import ServingMetrics
 
 MODEL_WORKER_NAME = "ModelWorker"
 APPLICATION_NAME = "default"
@@ -183,9 +185,16 @@ def build_ingress_app() -> FastAPI:
         version="0.4.0",
         description="Phase 4: replica-based local LLM inference with Ray Serve.",
     )
+    metrics = ServingMetrics.create()
+    application.state.metrics = metrics
 
     def model_handle():
         return serve.get_deployment_handle(MODEL_WORKER_NAME, app_name=APPLICATION_NAME)
+
+    @application.get("/metrics", include_in_schema=False)
+    async def prometheus_metrics() -> Response:
+        content, content_type = metrics.render()
+        return Response(content=content, media_type=content_type)
 
     @application.get("/health", response_model=HealthResponse, tags=["operations"])
     async def health() -> HealthResponse:
@@ -210,7 +219,22 @@ def build_ingress_app() -> FastAPI:
         payload: GenerateRequest, request: Request
     ) -> GenerateResponse:
         request_started = perf_counter()
-        result = await model_handle().generate.remote(payload.model_dump())
+        endpoint = "generate"
+        outcome = "success"
+        metrics.in_progress.labels(endpoint).inc()
+        try:
+            result = await model_handle().generate.remote(payload.model_dump())
+        except Exception:
+            outcome = "error"
+            raise
+        finally:
+            metrics.in_progress.labels(endpoint).dec()
+            metrics.requests.labels(endpoint, outcome).inc()
+            metrics.request_duration.labels(endpoint).observe(
+                perf_counter() - request_started
+            )
+        metrics.output_tokens.labels(endpoint).inc(int(result["output_tokens"]))
+        metrics.batch_size.observe(int(result["batch_size"]))
         return GenerateResponse(
             request_id=request.headers.get("x-request-id", str(uuid4())),
             replica_id=str(result["replica_id"]),

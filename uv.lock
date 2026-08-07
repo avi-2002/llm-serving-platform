@@ -920,6 +920,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
+    { name = "prometheus-client" },
     { name = "psutil" },
     { name = "ray", extra = ["serve"] },
     { name = "safetensors" },
@@ -938,6 +939,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.116,<1" },
+    { name = "prometheus-client", specifier = ">=0.26,<1" },
     { name = "psutil", specifier = ">=7,<8" },
     { name = "ray", extras = ["serve"], specifier = ">=2.56,<3" },
     { name = "safetensors", specifier = ">=0.5,<1" },

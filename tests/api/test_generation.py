@@ -20,6 +20,11 @@ def test_stream_generate_returns_sse_chunks_and_measurements() -> None:
     assert '"response": "A deterministic test response."' in body
     assert '"time_to_first_chunk_seconds":' in body
 
+    metrics = client.get("/metrics").text
+    assert 'llm_requests_total{endpoint="stream",outcome="success"} 1.0' in metrics
+    assert "llm_time_to_first_chunk_seconds_count 1.0" in metrics
+    assert "llm_stream_output_characters_total 30.0" in metrics
+
 
 def test_generate_returns_model_output_and_measurements() -> None:
     for client in make_ready_client():
@@ -38,6 +43,19 @@ def test_generate_returns_model_output_and_measurements() -> None:
     assert body["tokens_per_second"] == 24.0
     assert body["parameters"]["max_new_tokens"] == 32
     assert body["total_request_seconds"] >= 0
+
+
+def test_generate_records_prometheus_metrics() -> None:
+    for client in make_ready_client():
+        client.post("/v1/generate", json={"prompt": "Explain metrics."})
+        response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/plain")
+    body = response.text
+    assert 'llm_requests_total{endpoint="generate",outcome="success"} 1.0' in body
+    assert 'llm_output_tokens_total{endpoint="generate"} 6.0' in body
+    assert "llm_request_duration_seconds_bucket" in body
 
 
 def test_generate_rejects_blank_prompt() -> None:

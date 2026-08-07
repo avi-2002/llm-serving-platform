@@ -297,3 +297,17 @@ In the measured M1 smoke test, the first displayed text arrived after 0.308
 seconds while the complete response took 4.381 seconds. Streaming therefore let
 the user begin reading about 4.07 seconds before generation finished. See
 `benchmarks/phase6_analysis.md` for the result and limitations.
+
+## Phase 7: Prometheus observability
+
+The standard API records bounded, dashboard-friendly metrics for traffic,
+failures, active inference, latency, first streamed text, generated output, and
+batch sizes. After making inference requests, inspect them with:
+
+```bash
+curl -s http://127.0.0.1:8000/metrics | grep '^llm_'
+```
+
+The `/metrics` route uses Prometheus exposition format. See
+`docs/phase-7-fundamentals.md` for metric types, cardinality, PromQL topics, and
+the learning experiment.

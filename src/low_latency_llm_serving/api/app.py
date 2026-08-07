@@ -12,7 +12,7 @@ from uuid import uuid4
 
 import torch
 from fastapi import FastAPI, HTTPException, Request, status
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 
 from low_latency_llm_serving.api.runtime import ModelRuntime, RuntimeConfig
 from low_latency_llm_serving.api.schemas import (
@@ -24,6 +24,7 @@ from low_latency_llm_serving.api.schemas import (
     ReadyResponse,
 )
 from low_latency_llm_serving.inference import DEFAULT_MODEL_ID, GenerationSettings
+from low_latency_llm_serving.metrics import ServingMetrics
 
 
 def _display_dtype(value: object) -> str:
@@ -48,6 +49,7 @@ def create_app(
     auto_load: bool = True,
 ) -> FastAPI:
     model_runtime = runtime or ModelRuntime(runtime_config_from_environment())
+    metrics = ServingMetrics.create()
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
@@ -67,6 +69,12 @@ def create_app(
         lifespan=lifespan,
     )
     application.state.runtime = model_runtime
+    application.state.metrics = metrics
+
+    @application.get("/metrics", include_in_schema=False)
+    async def prometheus_metrics() -> Response:
+        content, content_type = metrics.render()
+        return Response(content=content, media_type=content_type)
 
     @application.get("/health", response_model=HealthResponse, tags=["operations"])
     async def health() -> HealthResponse:
@@ -129,13 +137,25 @@ def create_app(
             top_p=payload.top_p,
             seed=payload.seed,
         )
+        endpoint = "generate"
+        metrics.in_progress.labels(endpoint).inc()
         try:
             result = await model_runtime.generate(payload.prompt, settings)
         except RuntimeError as exc:
+            metrics.requests.labels(endpoint, "error").inc()
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=str(exc),
             ) from exc
+        finally:
+            metrics.in_progress.labels(endpoint).dec()
+            metrics.request_duration.labels(endpoint).observe(
+                perf_counter() - request_started
+            )
+
+        metrics.requests.labels(endpoint, "success").inc()
+        metrics.output_tokens.labels(endpoint).inc(result.output_tokens)
+        metrics.batch_size.observe(result.batch_size)
 
         return GenerateResponse(
             request_id=request.headers.get("x-request-id", str(uuid4())),
@@ -177,6 +197,8 @@ def create_app(
             started = perf_counter()
             first_chunk_seconds: float | None = None
             output = ""
+            outcome = "success"
+            metrics.in_progress.labels("stream").inc()
             yield event("start", {"request_id": request_id})
             try:
                 async for chunk in model_runtime.stream_generate(
@@ -184,7 +206,9 @@ def create_app(
                 ):
                     if first_chunk_seconds is None:
                         first_chunk_seconds = perf_counter() - started
+                        metrics.first_chunk.observe(first_chunk_seconds)
                     output += chunk
+                    metrics.output_characters.inc(len(chunk))
                     yield event("token", {"text": chunk})
                 total_seconds = perf_counter() - started
                 yield event(
@@ -197,7 +221,14 @@ def create_app(
                     },
                 )
             except RuntimeError as exc:
+                outcome = "error"
                 yield event("error", {"request_id": request_id, "detail": str(exc)})
+            finally:
+                metrics.in_progress.labels("stream").dec()
+                metrics.requests.labels("stream", outcome).inc()
+                metrics.request_duration.labels("stream").observe(
+                    perf_counter() - started
+                )
 
         return StreamingResponse(
             events(),
