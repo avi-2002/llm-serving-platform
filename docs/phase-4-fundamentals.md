@@ -29,9 +29,9 @@ mean two Python processes and two copies of the model weights.
 ```text
 HTTP client
   -> Ray Serve HTTP proxy
-  -> request router
-  -> available LocalLLMDeployment replica
-  -> replica-local FastAPI validation
+  -> lightweight FastAPI ingress replica
+  -> deployment handle and request router
+  -> available ModelWorker replica
   -> LocalLLM generation
   -> JSON response with replica ID
 ```
@@ -100,10 +100,11 @@ behavior is understood.
 ## FastAPI factory lesson
 
 The current FastAPI object contains an internal thread lock and cannot be
-serialized by Ray's `cloudpickle`. Each Ray replica therefore constructs its
-FastAPI application locally after its actor starts using the deferred ingress
-factory. This is why serialization boundaries matter in distributed systems:
-objects that work within one process are not necessarily transferable to another.
+serialized by Ray's `cloudpickle`. A lightweight ingress replica therefore builds
+FastAPI locally from a factory and delegates inference to separate model workers
+through a Ray deployment handle. This is why serialization boundaries matter in
+distributed systems: objects that work within one process are not necessarily
+transferable to another.
 
 ## Expected experiment
 

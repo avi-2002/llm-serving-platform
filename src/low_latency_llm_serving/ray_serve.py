@@ -1,6 +1,4 @@
-"""Ray Serve deployment that preserves the Phase 2 HTTP contract."""
-
-from __future__ import annotations
+"""Ray Serve application with separate HTTP ingress and model replicas."""
 
 import asyncio
 import os
@@ -26,6 +24,9 @@ from low_latency_llm_serving.inference import (
     GenerationSettings,
     LocalLLM,
 )
+
+MODEL_WORKER_NAME = "ModelWorker"
+APPLICATION_NAME = "default"
 
 
 @dataclass(frozen=True)
@@ -67,9 +68,10 @@ def config_from_environment() -> RayServeConfig:
     )
 
 
-@serve.deployment(name="LocalLLMDeployment")
-@serve.ingress()
-class RayLLMDeployment:
+@serve.deployment(name=MODEL_WORKER_NAME)
+class ModelWorker:
+    """One stateful Ray actor containing one independently loaded model."""
+
     def __init__(
         self,
         model_id: str,
@@ -83,86 +85,106 @@ class RayLLMDeployment:
         self.model = LocalLLM(model_id=model_id, device=device, dtype=dtype)
         self.replica_id = str(ray.get_runtime_context().get_actor_id())
 
-    def __serve_build_asgi_app__(self) -> FastAPI:
-        """Build FastAPI inside the replica to avoid serializing its thread locks."""
-        application = FastAPI(
-            title="Ray Serve LLM API",
-            version="0.4.0",
-            description="Phase 4: replica-based local LLM inference with Ray Serve.",
+    async def metadata(self) -> dict[str, object]:
+        return {
+            "model_id": self.model.model_id,
+            "device": self.model.device.type,
+            "dtype": str(self.model.dtype).removeprefix("torch."),
+            "load_seconds": self.model.load_seconds,
+        }
+
+    async def generate(self, payload: dict[str, object]) -> dict[str, object]:
+        settings = GenerationSettings(
+            max_new_tokens=int(payload["max_new_tokens"]),
+            do_sample=bool(payload["do_sample"]),
+            temperature=float(payload["temperature"]),
+            top_p=float(payload["top_p"]),
+            seed=int(payload["seed"]),
         )
-
-        @application.get(
-            "/health", response_model=HealthResponse, tags=["operations"]
+        result = await asyncio.to_thread(
+            self.model.generate, str(payload["prompt"]), settings
         )
-        async def health_endpoint() -> HealthResponse:
-            return await self.health()
+        return {
+            "replica_id": self.replica_id,
+            "model_id": result.model_id,
+            "device": result.device,
+            "dtype": result.dtype,
+            "response": result.response,
+            "input_tokens": result.input_tokens,
+            "output_tokens": result.output_tokens,
+            "generation_seconds": result.generation_seconds,
+            "tokens_per_second": result.tokens_per_second,
+            "settings": asdict(result.settings),
+        }
 
-        @application.get("/ready", response_model=ReadyResponse, tags=["operations"])
-        async def ready_endpoint() -> ReadyResponse:
-            return await self.ready()
 
-        @application.get(
-            "/v1/metadata", response_model=MetadataResponse, tags=["inference"]
-        )
-        async def metadata_endpoint() -> MetadataResponse:
-            return await self.metadata()
+def build_ingress_app() -> FastAPI:
+    """Construct FastAPI inside the ingress replica, as recommended by Ray."""
+    application = FastAPI(
+        title="Ray Serve LLM API",
+        version="0.4.0",
+        description="Phase 4: replica-based local LLM inference with Ray Serve.",
+    )
 
-        @application.post(
-            "/v1/generate", response_model=GenerateResponse, tags=["inference"]
-        )
-        async def generate_endpoint(
-            payload: GenerateRequest, request: Request
-        ) -> GenerateResponse:
-            return await self.generate(payload, request)
+    def model_handle():
+        return serve.get_deployment_handle(MODEL_WORKER_NAME, app_name=APPLICATION_NAME)
 
-        return application
-
-    async def health(self) -> HealthResponse:
+    @application.get("/health", response_model=HealthResponse, tags=["operations"])
+    async def health() -> HealthResponse:
         return HealthResponse(model_status="ready")
 
-    async def ready(self) -> ReadyResponse:
-        return ReadyResponse(model_id=self.model.model_id)
+    @application.get("/ready", response_model=ReadyResponse, tags=["operations"])
+    async def ready() -> ReadyResponse:
+        metadata = await model_handle().metadata.remote()
+        return ReadyResponse(model_id=str(metadata["model_id"]))
 
-    async def metadata(self) -> MetadataResponse:
-        return MetadataResponse(
-            model_id=self.model.model_id,
-            device=self.model.device.type,
-            dtype=str(self.model.dtype).removeprefix("torch."),
-            load_seconds=self.model.load_seconds,
-        )
+    @application.get(
+        "/v1/metadata", response_model=MetadataResponse, tags=["inference"]
+    )
+    async def metadata() -> MetadataResponse:
+        result = await model_handle().metadata.remote()
+        return MetadataResponse.model_validate(result)
 
+    @application.post(
+        "/v1/generate", response_model=GenerateResponse, tags=["inference"]
+    )
     async def generate(
-        self, payload: GenerateRequest, request: Request
+        payload: GenerateRequest, request: Request
     ) -> GenerateResponse:
         request_started = perf_counter()
-        settings = GenerationSettings(
-            max_new_tokens=payload.max_new_tokens,
-            do_sample=payload.do_sample,
-            temperature=payload.temperature,
-            top_p=payload.top_p,
-            seed=payload.seed,
-        )
-        result = await asyncio.to_thread(self.model.generate, payload.prompt, settings)
+        result = await model_handle().generate.remote(payload.model_dump())
         return GenerateResponse(
             request_id=request.headers.get("x-request-id", str(uuid4())),
-            replica_id=self.replica_id,
-            model_id=result.model_id,
-            device=result.device,
-            dtype=result.dtype,
-            response=result.response,
-            input_tokens=result.input_tokens,
-            output_tokens=result.output_tokens,
-            generation_seconds=result.generation_seconds,
+            replica_id=str(result["replica_id"]),
+            model_id=str(result["model_id"]),
+            device=str(result["device"]),
+            dtype=str(result["dtype"]),
+            response=str(result["response"]),
+            input_tokens=int(result["input_tokens"]),
+            output_tokens=int(result["output_tokens"]),
+            generation_seconds=float(result["generation_seconds"]),
             total_request_seconds=perf_counter() - request_started,
-            tokens_per_second=result.tokens_per_second,
-            parameters=GenerationParameters(**asdict(result.settings)),
+            tokens_per_second=float(result["tokens_per_second"]),
+            parameters=GenerationParameters.model_validate(result["settings"]),
         )
+
+    return application
+
+
+@serve.deployment(name="HTTPIngress", ray_actor_options={"num_cpus": 0})
+@serve.ingress(build_ingress_app)
+class HTTPIngress:
+    """Lightweight HTTP boundary; model work is delegated through a handle."""
+
+    def __init__(self, model_worker) -> None:
+        # Binding the child ensures Ray deploys it as part of this application.
+        self._model_worker = model_worker
 
 
 def build_application(config: RayServeConfig | None = None) -> serve.Application:
     config = config or config_from_environment()
     config.validate()
-    return RayLLMDeployment.options(
+    worker = ModelWorker.options(
         num_replicas=config.num_replicas,
         max_ongoing_requests=1,
         max_queued_requests=config.max_queued_requests,
@@ -173,6 +195,7 @@ def build_application(config: RayServeConfig | None = None) -> serve.Application
         config.dtype,
         config.torch_threads_per_replica,
     )
+    return HTTPIngress.bind(worker)
 
 
 application = build_application()
@@ -187,7 +210,12 @@ def main() -> None:
         num_cpus=int(os.getenv("RAY_TOTAL_CPUS", "8")),
         log_to_driver=True,
     )
-    serve.run(build_application(config), blocking=True, route_prefix="/")
+    serve.run(
+        build_application(config),
+        blocking=True,
+        name=APPLICATION_NAME,
+        route_prefix="/",
+    )
 
 
 if __name__ == "__main__":

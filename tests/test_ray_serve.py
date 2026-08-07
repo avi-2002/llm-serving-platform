@@ -1,25 +1,21 @@
 import pytest
 
 from low_latency_llm_serving.ray_serve import (
-    RayLLMDeployment,
     RayServeConfig,
     build_application,
+    build_ingress_app,
 )
 
 
 def test_ray_deployment_uses_deferred_fastapi_factory() -> None:
-    deployment_class = RayLLMDeployment.func_or_class
-    deployment = object.__new__(deployment_class)
-    application = deployment.__serve_build_asgi_app__()
+    application = build_ingress_app()
     paths = {route.path for route in application.routes}
 
     assert {"/health", "/ready", "/v1/metadata", "/v1/generate"} <= paths
 
 
 def test_ray_generation_openapi_declares_json_body_not_query_parameters() -> None:
-    deployment_class = RayLLMDeployment.func_or_class
-    deployment = object.__new__(deployment_class)
-    application = deployment.__serve_build_asgi_app__()
+    application = build_ingress_app()
 
     operation = application.openapi()["paths"]["/v1/generate"]["post"]
 
