@@ -337,3 +337,8 @@ uv run mlflow ui --backend-store-uri "sqlite:///$PWD/work/mlflow.db" --port 5000
 Visit <http://127.0.0.1:5000>. The initial code-based concept coverage and
 forbidden-claim checks are deliberately transparent regression signals, not proof
 of factual correctness. See `docs/phase-8-fundamentals.md`.
+
+The first Qwen 0.5B baseline completed 5/5 cases with 46.7% concept coverage and
+3.900-second mean latency. Manual review caught an incorrect streaming claim that
+the initial phrase-based hallucination rule missed, so the failure was added to
+the regression dataset. See `benchmarks/phase8_analysis.md`.

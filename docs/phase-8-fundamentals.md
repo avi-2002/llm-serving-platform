@@ -63,6 +63,17 @@ run's metrics, parameters, and artifacts.
 - MLflow experiments, runs, parameters, metrics, tags, and artifacts.
 - Quality/latency/cost trade-offs and model promotion thresholds.
 
+## Observed baseline
+
+The Qwen 0.5B CPU run completed 5/5 cases with 46.7% mean concept coverage, 3.900
+second mean latency, and 4.324 second p95 latency. Although the first automatic
+hallucination signal was 0%, manual review found a false claim that streaming
+speeds model computation. The original exact-phrase rule did not recognize the
+model's alternative wording.
+
+We added the observed bad phrasings to the dataset for future regression runs.
+See `benchmarks/phase8_analysis.md` for the per-case review.
+
 ## Official reading
 
 - MLflow Tracking: <https://mlflow.org/docs/latest/ml/tracking/>

@@ -15,7 +15,11 @@
     "id": "streaming",
     "prompt": "Does response streaming make the model compute the complete answer faster? Explain briefly.",
     "expected_concepts": [["no", "not"], ["display", "show", "user", "perceived"], ["generate", "compute", "total"]],
-    "forbidden_claims": ["streaming always makes generation faster"]
+    "forbidden_claims": [
+      "streaming always makes generation faster",
+      "streaming can indeed speed up computation",
+      "processing multiple responses simultaneously"
+    ]
   },
   {
     "id": "health-vs-readiness",
@@ -27,6 +31,9 @@
     "id": "prometheus-counter",
     "prompt": "What should a Prometheus counter measure, and can it normally decrease?",
     "expected_concepts": [["counter"], ["increase", "increment", "total"], ["not decrease", "cannot decrease", "only goes up", "reset"]],
-    "forbidden_claims": ["a counter normally increases and decreases"]
+    "forbidden_claims": [
+      "a counter normally increases and decreases",
+      "whether a counter can normally decrease, this depends"
+    ]
   }
 ]

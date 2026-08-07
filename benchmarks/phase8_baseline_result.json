@@ -1,0 +1,30 @@
+{
+  "mlflow_run_id": "7999322cc8104608bfdbe4d3f8c5c07b",
+  "model_id": "Qwen/Qwen2.5-0.5B-Instruct",
+  "device": "cpu",
+  "dtype": "float32",
+  "max_new_tokens": 64,
+  "seed": 42,
+  "summary": {
+    "successful_cases": 5,
+    "cases": 5,
+    "success_rate": 1.0,
+    "mean_concept_coverage": 0.4666666666666667,
+    "reported_hallucination_signal_rate": 0.0,
+    "mean_latency_seconds": 3.9001989331998628,
+    "p95_latency_seconds": 4.323839833002421,
+    "total_output_tokens": 282
+  },
+  "concept_coverage_by_case": {
+    "latency-vs-throughput": 0.6666666666666666,
+    "dynamic-batching": 0.3333333333333333,
+    "streaming": 0.0,
+    "health-vs-readiness": 1.0,
+    "prometheus-counter": 0.3333333333333333
+  },
+  "manual_review": {
+    "automatic_zero_hallucination_warning_is_not_reliable": true,
+    "streaming_answer_contained_a_false_speedup_claim": true,
+    "prometheus_counter_answer_was_incomplete_or_misleading": true
+  }
+}
