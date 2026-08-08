@@ -14,6 +14,18 @@ from low_latency_llm_serving.api_client import (
 st.set_page_config(page_title="LLM Serving Platform", page_icon="⚡", layout="wide")
 
 
+def configured_api_url() -> str:
+    """Read local environment first, then a Streamlit Cloud secret."""
+    if value := os.getenv("LLM_API_URL"):
+        return value
+    try:
+        if value := st.secrets.get("LLM_API_URL"):
+            return str(value)
+    except FileNotFoundError:
+        pass
+    return "http://127.0.0.1:8000"
+
+
 def metric_caption(metrics: dict[str, Any]) -> str:
     parts = []
     mappings = (
@@ -39,7 +51,7 @@ def generation_settings() -> dict[str, Any]:
         st.header("Serving controls")
         api_url = st.text_input(
             "Backend API URL",
-            value=os.getenv("LLM_API_URL", "http://127.0.0.1:8000"),
+            value=configured_api_url(),
         )
         max_new_tokens = st.slider("Maximum new tokens", 8, 256, 64, 8)
         do_sample = st.toggle("Enable sampling", value=False)

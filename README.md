@@ -1,9 +1,23 @@
 # Low-Latency LLM Model Serving Platform
 
-A learning-first implementation of local LLM inference that will evolve into a
-Ray Serve and Kubernetes serving platform. Phase 1 deliberately uses plain
-PyTorch and Hugging Face Transformers so the inference fundamentals remain
-visible before serving infrastructure is introduced.
+A learning-first, end-to-end LLM serving system built across twelve measured
+phases: local PyTorch inference, FastAPI, load testing, Ray Serve replicas,
+dynamic batching, token streaming, Prometheus, MLflow evaluation, Docker,
+Kubernetes, Streamlit, and CI/CD release automation.
+
+## Final architecture
+
+```text
+Streamlit -> FastAPI or Ray Serve -> dynamic batching -> Qwen model replicas
+                    |                         |
+              Prometheus metrics       persistent model cache
+
+GitHub Actions -> GHCR image -> Kubernetes backend
+Evaluation runner -> API -> MLflow experiment history
+```
+
+See [the detailed architecture](docs/architecture.md) and the
+[Phase 12 release guide](docs/phase-12-fundamentals.md).
 
 ## Phase 1 architecture
 
@@ -422,3 +436,16 @@ final hands-on checkpoint for this phase.
 The completed browser checkpoint showed first streamed text in 2.351 seconds
 versus 17.807 seconds for the full request, and Compose shut down both healthy
 services cleanly while preserving the model cache.
+
+## Phase 12: release and deployment automation
+
+Every push and pull request now runs linting, the unit suite, and a complete
+container build in GitHub Actions. A `v*` release tag publishes an SBOM- and
+provenance-enabled multi-architecture image to GHCR. Kubernetes consumes that
+published image, while a lightweight root entry point makes the Streamlit UI
+deployable separately on Community Cloud.
+
+The split is intentional: the small frontend can use a lightweight host, but the
+PyTorch model backend needs a suitable container/Kubernetes host and persistent
+model cache. See `docs/phase-12-fundamentals.md` for the deployment sequence,
+security boundary, completion checklist, and suggested study topics.

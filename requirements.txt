@@ -1,0 +1,4 @@
+# Lightweight frontend-only dependencies for Streamlit Community Cloud.
+# The full backend remains locked by uv.lock and runs in its container.
+requests>=2.34,<3
+streamlit>=1.49,<2

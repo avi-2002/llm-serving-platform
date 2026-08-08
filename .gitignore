@@ -14,5 +14,5 @@ outputs/
 
 # Local settings and operating-system files
 .env
+.streamlit/secrets.toml
 .DS_Store
-
