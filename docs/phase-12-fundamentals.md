@@ -16,7 +16,8 @@ known image, understandable by a reviewer, and honest about its limitations.
 
 ## What this phase adds
 
-1. `.github/workflows/ci.yml` checks code and the Docker image on pushes and PRs.
+1. `.github/workflows/ci.yml` checks code and validates the Docker build definition
+   on pushes and PRs. The release workflow performs the expensive complete build.
 2. `.github/workflows/publish-image.yml` publishes multi-architecture images on
    `v*` tags or a manual run.
 3. The Kubernetes Deployment references the published GHCR image.

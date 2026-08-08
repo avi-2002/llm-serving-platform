@@ -12,7 +12,7 @@ jobs:
   quality:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
@@ -26,13 +26,7 @@ jobs:
   container-definition:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: docker/setup-buildx-action@v3
       - name: Validate Docker build definition
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: false
-          tags: llm-serving-platform:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+        run: docker buildx build --check .

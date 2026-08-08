@@ -9,7 +9,7 @@ def test_ci_runs_lint_tests_and_container_build() -> None:
     assert "uv sync --locked" in ci
     assert "uv run ruff check ." in ci
     assert "uv run pytest -q" in ci
-    assert "docker/build-push-action@v6" in ci
+    assert "docker buildx build --check ." in ci
 
 
 def test_publish_workflow_uses_ghcr_and_version_tags() -> None:

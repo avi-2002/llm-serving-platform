@@ -439,8 +439,9 @@ services cleanly while preserving the model cache.
 
 ## Phase 12: release and deployment automation
 
-Every push and pull request now runs linting, the unit suite, and a complete
-container build in GitHub Actions. A `v*` release tag publishes an SBOM- and
+Every push and pull request now runs linting, the unit suite, and Dockerfile
+validation in GitHub Actions. A `v*` release tag performs the complete build and
+publishes an SBOM- and
 provenance-enabled multi-architecture image to GHCR. Kubernetes consumes that
 published image, while a lightweight root entry point makes the Streamlit UI
 deployable separately on Community Cloud.
