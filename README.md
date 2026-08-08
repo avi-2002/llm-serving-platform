@@ -418,3 +418,7 @@ modes plus the frontend/backend concepts.
 The verified Phase 11 image serves Streamlit 1.61.1 as a non-root process on port
 8501 and passes its `/_stcore/health` check. Browser-to-model interaction is the
 final hands-on checkpoint for this phase.
+
+The completed browser checkpoint showed first streamed text in 2.351 seconds
+versus 17.807 seconds for the full request, and Compose shut down both healthy
+services cleanly while preserving the model cache.

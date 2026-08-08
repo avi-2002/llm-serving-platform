@@ -115,6 +115,18 @@ image, started the UI as the non-root user on port 8501, and returned `ok` from
 The remaining hands-on checkpoint is to start a real backend and submit prompts
 through the browser, exercising both streaming and completed-response modes.
 
+## User verification
+
+The Docker Compose browser test started healthy API and UI containers and streamed
+a real answer. First text appeared after 2.351 seconds, while the request completed
+after 17.807 seconds, letting the user begin reading 15.456 seconds earlier. Both
+containers and their network were then removed cleanly while the model volume was
+retained.
+
+The answer ended mid-sentence because it reached the configured output-token
+limit. This is a model-generation setting, not a Streamlit transport failure; the
+UI exposes the maximum-token control so the trade-off can be adjusted.
+
 ## Official reading
 
 - Streamlit chat elements:

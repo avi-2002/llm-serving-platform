@@ -1,0 +1,15 @@
+{
+  "deployment_mode": "Docker Compose",
+  "api_image": "llm-serving-platform:phase11",
+  "ui_image": "llm-serving-platform:phase11",
+  "api_container_healthy": true,
+  "ui_container_healthy": true,
+  "streaming_worked": true,
+  "time_to_first_chunk_seconds": 2.351,
+  "total_request_seconds": 17.807,
+  "text_visible_before_completion_seconds": 15.456,
+  "first_chunk_fraction_of_total": 0.1320267311,
+  "response_was_truncated": true,
+  "compose_down_removed_containers": true,
+  "model_volume_retained": true
+}
