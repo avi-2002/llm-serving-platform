@@ -1,7 +1,7 @@
 name: llm-serving-platform
 
 x-common: &common
-  image: llm-serving-platform:phase9
+  image: llm-serving-platform:phase11
   build:
     context: .
     dockerfile: Dockerfile
@@ -40,6 +40,34 @@ services:
       RAY_HTTP_HOST: 0.0.0.0
       RAY_HTTP_PORT: "8000"
     shm_size: "2gb"
+
+  ui:
+    image: llm-serving-platform:phase11
+    build:
+      context: .
+      dockerfile: Dockerfile
+    init: true
+    command: ["llm-ui"]
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      LLM_API_URL: http://api:8000
+      UI_HOST: 0.0.0.0
+      UI_PORT: "8501"
+      STREAMLIT_BROWSER_GATHER_USAGE_STATS: "false"
+    ports:
+      - "8501:8501"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=2)
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
 
 volumes:
   huggingface-cache:

@@ -1,0 +1,14 @@
+{
+  "image": "llm-serving-platform:phase11",
+  "architecture": "arm64",
+  "os": "linux",
+  "image_size_bytes": 645458183,
+  "runtime_user": "appuser",
+  "streamlit_version": "1.61.1",
+  "published_port": "8501:8501",
+  "health_endpoint": "/_stcore/health",
+  "health_response": "ok",
+  "streamlit_render_test": "passed",
+  "sse_parser_tests": "passed",
+  "container_removed_after_smoke_test": true
+}

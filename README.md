@@ -393,3 +393,28 @@ ClusterIP Service, and retained the model cache through Pod replacements. See
 
 The user-run checkpoint independently verified a 32-token response through the
 Kubernetes Service and Ray replica at 4.44 tokens/s.
+
+## Phase 11: Streamlit chat interface
+
+Start a backend, then launch the user interface:
+
+```bash
+LLM_API_URL=http://127.0.0.1:8000 uv run llm-ui
+```
+
+Open <http://127.0.0.1:8501>. The UI offers chat controls, readiness feedback,
+session history, streamed text on the standard FastAPI backend, safe fallback on
+Ray Serve, and available timing/batch/replica telemetry.
+
+Run the API and UI together in separate containers with:
+
+```bash
+docker compose up --build api ui
+```
+
+See `docs/phase-11-fundamentals.md` for local, Compose, and Kubernetes connection
+modes plus the frontend/backend concepts.
+
+The verified Phase 11 image serves Streamlit 1.61.1 as a non-root process on port
+8501 and passes its `/_stcore/health` check. Browser-to-model interaction is the
+final hands-on checkpoint for this phase.
