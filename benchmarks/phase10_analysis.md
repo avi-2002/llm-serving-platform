@@ -41,3 +41,11 @@ unique version tags or immutable image digests.
 This proves a working single-node local deployment. It does not yet prove
 multi-node storage, cloud load balancing, registry-based image distribution,
 autoscaling, high availability, or production security operations.
+
+## User verification
+
+An independent port-forwarded request generated all 32 requested tokens in 7.20
+seconds, or 4.44 tokens/s, with 7.25 seconds total latency. The returned Ray
+replica ID confirmed the same Service-to-Ray path used by the automated smoke
+test. The different timing used a longer output and is a functional observation,
+not a controlled comparison with the 23-token smoke request.

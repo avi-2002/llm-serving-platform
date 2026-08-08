@@ -1,0 +1,15 @@
+{
+  "request_id": "phase10-learning-1",
+  "access_path": "port-forward -> ClusterIP Service -> Ray Serve -> model worker",
+  "model_id": "Qwen/Qwen2.5-0.5B-Instruct",
+  "replica_id": "cff0b0f26a4f626f3efd767901000000",
+  "device": "cpu",
+  "dtype": "float32",
+  "input_tokens": 30,
+  "output_tokens": 32,
+  "generation_seconds": 7.20334208700001,
+  "total_request_seconds": 7.252358503999972,
+  "tokens_per_second": 4.442382384941974,
+  "batch_size": 1,
+  "success": true
+}

@@ -390,3 +390,6 @@ The verified Docker Desktop deployment bound persistent storage, loaded Ray Serv
 and Qwen, passed all three probe stages, served real inference through its
 ClusterIP Service, and retained the model cache through Pod replacements. See
 `benchmarks/phase10_analysis.md` for live issues found and fixed.
+
+The user-run checkpoint independently verified a 32-token response through the
+Kubernetes Service and Ray replica at 4.44 tokens/s.

@@ -130,6 +130,9 @@ proxy, and mutable image-tag caching. These failures illustrate why rendered YAM
 and unit tests cannot replace a real cluster rollout. See
 `benchmarks/phase10_analysis.md` for the evidence and limitations.
 
+The user independently repeated the Service port-forward test and received a
+32-token Ray Serve response at 4.44 tokens/s, completing the hands-on checkpoint.
+
 ## Official reading
 
 - Kubernetes concepts: <https://kubernetes.io/docs/concepts/>
