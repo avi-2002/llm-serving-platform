@@ -80,6 +80,17 @@ def config_from_environment() -> RayServeConfig:
     )
 
 
+def http_options_from_environment() -> dict[str, object]:
+    """Return Ray proxy settings that remain reachable outside the container."""
+    host = os.getenv("RAY_HTTP_HOST", "0.0.0.0")
+    port = int(os.getenv("RAY_HTTP_PORT", "8000"))
+    if not host.strip():
+        raise ValueError("RAY_HTTP_HOST must contain text")
+    if not 1 <= port <= 65_535:
+        raise ValueError("RAY_HTTP_PORT must be between 1 and 65535")
+    return {"host": host, "port": port}
+
+
 @serve.deployment(name=MODEL_WORKER_NAME)
 class ModelWorker:
     """One stateful Ray actor containing one independently loaded model."""
@@ -295,6 +306,7 @@ def main() -> None:
         num_cpus=int(os.getenv("RAY_TOTAL_CPUS", "8")),
         log_to_driver=True,
     )
+    serve.start(http_options=http_options_from_environment())
     serve.run(
         build_application(config),
         blocking=True,

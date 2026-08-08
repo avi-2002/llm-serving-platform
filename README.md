@@ -385,3 +385,8 @@ kubectl port-forward -n llm-serving service/llm-serving 8080:80
 The Pod has separate startup, readiness, and liveness probes plus explicit CPU
 and memory requests/limits. See `docs/phase-10-fundamentals.md` for local-cluster
 setup, inspection commands, architecture, and cleanup cautions.
+
+The verified Docker Desktop deployment bound persistent storage, loaded Ray Serve
+and Qwen, passed all three probe stages, served real inference through its
+ClusterIP Service, and retained the model cache through Pod replacements. See
+`benchmarks/phase10_analysis.md` for live issues found and fixed.

@@ -12,7 +12,8 @@ Pod should receive traffic or be restarted.
 - **Namespace:** isolates the learning deployment as `llm-serving`.
 - **ConfigMap:** stores non-secret model and Ray settings outside the image.
 - **PersistentVolumeClaim:** requests 2 GiB for the Hugging Face model cache.
-- **Deployment:** declares one Pod running `ray-llm-api` from the Phase 9 image.
+- **Deployment:** declares one Pod running `ray-llm-api` from the container image,
+  tagged `phase10` after its Kubernetes networking fix.
 - **Service:** gives the Pod a stable internal address and port.
 - **Kustomization:** applies all resources as one unit.
 
@@ -116,6 +117,18 @@ you intend to remove the Kubernetes model cache.
 - Persistent volumes, claims, access modes, and storage classes.
 - Rolling updates versus the `Recreate` strategy.
 - Horizontal Pod Autoscaling and why LLM scaling needs workload-aware metrics.
+
+## Observed deployment result
+
+The Docker Desktop v1.36.1 cluster created all resources, bound the 2 GiB claim,
+and ran Ray Serve as a non-root process with zero restarts. The 954 MB model cache
+survived Pod replacements. A request through the ClusterIP Service generated 23
+tokens in 5.55 seconds and was recorded by Prometheus.
+
+Live testing found and fixed undersized Ray shared memory, a loopback-only HTTP
+proxy, and mutable image-tag caching. These failures illustrate why rendered YAML
+and unit tests cannot replace a real cluster rollout. See
+`benchmarks/phase10_analysis.md` for the evidence and limitations.
 
 ## Official reading
 

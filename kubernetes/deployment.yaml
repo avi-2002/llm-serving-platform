@@ -29,7 +29,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: ray-llm-api
-          image: llm-serving-platform:phase9
+          image: llm-serving-platform:phase10
           imagePullPolicy: IfNotPresent
           command: ["ray-llm-api"]
           envFrom:
@@ -88,4 +88,4 @@ spec:
         - name: shared-memory
           emptyDir:
             medium: Memory
-            sizeLimit: 512Mi
+            sizeLimit: 2Gi

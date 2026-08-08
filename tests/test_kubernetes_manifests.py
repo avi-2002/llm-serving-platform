@@ -14,7 +14,7 @@ def test_deployment_runs_ray_with_resources_security_and_three_probes() -> None:
 
     assert deployment["spec"]["replicas"] == 1
     assert deployment["spec"]["strategy"]["type"] == "Recreate"
-    assert container["image"] == "llm-serving-platform:phase9"
+    assert container["image"] == "llm-serving-platform:phase10"
     assert container["imagePullPolicy"] == "IfNotPresent"
     assert container["command"] == ["ray-llm-api"]
     assert container["resources"]["requests"] == {"cpu": "1", "memory": "2Gi"}
@@ -24,6 +24,10 @@ def test_deployment_runs_ray_with_resources_security_and_three_probes() -> None:
     assert container["livenessProbe"]["httpGet"]["path"] == "/health"
     assert container["securityContext"]["readOnlyRootFilesystem"] is True
     assert pod_spec["securityContext"]["runAsNonRoot"] is True
+    shared_memory = next(
+        volume for volume in pod_spec["volumes"] if volume["name"] == "shared-memory"
+    )
+    assert shared_memory["emptyDir"] == {"medium": "Memory", "sizeLimit": "2Gi"}
 
 
 def test_service_selects_deployment_and_maps_port() -> None:

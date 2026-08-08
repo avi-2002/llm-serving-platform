@@ -1,0 +1,31 @@
+{
+  "cluster_context": "docker-desktop",
+  "kubernetes_version": "v1.36.1",
+  "node": "desktop-control-plane",
+  "namespace": "llm-serving",
+  "deployment": "llm-serving",
+  "image": "llm-serving-platform:phase10",
+  "pod_ready": true,
+  "pod_restarts": 0,
+  "service_type": "ClusterIP",
+  "persistent_volume_claim": {
+    "status": "Bound",
+    "capacity": "2Gi",
+    "cached_model_size_mb": 954
+  },
+  "runtime": {
+    "user_id": 10001,
+    "group_id": 10001,
+    "shared_memory_limit": "2Gi"
+  },
+  "inference": {
+    "request_id": "phase10-kubernetes-smoke",
+    "model_id": "Qwen/Qwen2.5-0.5B-Instruct",
+    "device": "cpu",
+    "output_tokens": 23,
+    "generation_seconds": 5.5468025860000125,
+    "total_request_seconds": 5.606910543999902,
+    "batch_size": 1,
+    "prometheus_success_count": 1
+  }
+}
